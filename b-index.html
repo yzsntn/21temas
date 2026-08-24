@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Piedra Cúbica de Punta y los 21 Temas</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Infografía Interactiva: La Piedra Cúbica de Punta</h1>
+<p class="subtitle">Distribución geométrica y sintética de los 21 Temas del Grado de Compañero</p>
+
+<div class="container">
+    <div class="visual-map">
+        <!-- Zone 3: Pirámide -->
+        <div class="stone-section piramide-zone">
+            <div class="section-title">Nivel 3: Cúspide (4 Temas)</div>
+            <div style="font-size: 8pt; color: #fef08a;">Trascendencia y Espíritu</div>
+            <div class="grid-buttons" style="max-width: 250px;">
+                <button class="topic-btn" onclick="showTopic('t11')">11. Letra G</button>
+                <button class="topic-btn" onclick="showTopic('t17')">17. Número 5</button>
+                <button class="topic-btn" onclick="showTopic('t18')">18. Estrella</button>
+                <button class="topic-btn" onclick="showTopic('t19')">19. Piedra Cúbica</button>
+            </div>
+        </div>
+
+        <!-- Zone 2: Cubo -->
+        <div class="stone-section cubo-zone">
+            <div class="section-title">Nivel 2: Cuerpo Cúbico (12 Temas)</div>
+            <div style="font-size: 8pt; color: #93c5fd; margin-bottom: 8px;">Las 4 Caras de la Ciencia, Artes y Deber</div>
+            <div class="grid-buttons">
+                <button class="topic-btn" onclick="showTopic('t2')">2. Los Viajes</button>
+                <button class="topic-btn" onclick="showTopic('t3')">3. P. de Pase</button>
+                <button class="topic-btn" onclick="showTopic('t4')">4. P. Sagrada</button>
+                <button class="topic-btn" onclick="showTopic('t5')">5. Escalones</button>
+                <button class="topic-btn" onclick="showTopic('t6')">6. Columna J</button>
+                <button class="topic-btn" onclick="showTopic('t7')">7. 5 Sentidos</button>
+                <button class="topic-btn" onclick="showTopic('t8')">8. Arquitectura</button>
+                <button class="topic-btn" onclick="showTopic('t9')">9. La Ciencia</button>
+                <button class="topic-btn" onclick="showTopic('t12')">12. Las Ciencias</button>
+                <button class="topic-btn" onclick="showTopic('t13')">13. R. Filosófico</button>
+                <button class="topic-btn" onclick="showTopic('t20')">20. Objeto Grado</button>
+                <button class="topic-btn" onclick="showTopic('t21')">21. C. y Virtud</button>
+            </div>
+        </div>
+
+        <!-- Zone 1: Base -->
+        <div class="stone-section base-zone">
+            <div class="section-title">Nivel 1: Zócalo Moral (5 Temas)</div>
+            <div style="font-size: 8pt; color: #cbd5e1; margin-bottom: 8px;">Fundamentos del Ser y Disciplina Moral</div>
+            <div class="grid-buttons">
+                <button class="topic-btn" onclick="showTopic('t1')">1. Resumen 1º</button>
+                <button class="topic-btn" onclick="showTopic('t10')">10. El Mandil</button>
+                <button class="topic-btn" onclick="showTopic('t14')">14. La Biblia</button>
+                <button class="topic-btn" onclick="showTopic('t15')">15. R. Histórico</button>
+                <button class="topic-btn" onclick="showTopic('t16')">16. Iniciaciones</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de Detalles -->
+    <div class="details-panel" id="detailsPanel">
+        <div id="default-msg" class="card-detail active">
+            <h3 style="color: #38bdf8; margin-top: 40px; text-align: center;">Instrucción de uso</h3>
+            <p style="text-align: center;">Haz clic en cualquiera de los temas del esquema tridimensional de la piedra a la izquierda para desplegar la síntesis conceptual, el complemento filosófico y su posición dentro del mapa de enseñanza.</p>
+        </div>
+
+        <div id="t1" class="card-detail">
+            <span class="tag tag-base">Zócalo Moral / Base</span>
+            <h2 class="detail-title">1. Resumen simbólico del Primer Grado</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> El Primer Grado representa la preparación mental y moral del iniciado. A través del silencio y la duda filosófica, la mente se disciplina para partir de lo evidente y adentrarse en lo desconocido, iniciando así el constante pulido de la virtud.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Simboliza la purificación de la piedra bruta mediante el dominio de las pasiones y el despertar de la conciencia moral.</div>
+        </div>
+
+        <div id="t2" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Herramientas</span>
+            <h2 class="detail-title">2. Los Viajes, su simbolismo y diversas interpretaciones</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Representan la adquisición gradual de herramientas simbólicas para el progreso cotidiano. Enseñan que el verdadero aprendizaje exige perseverancia y flexibilidad, donde retroceder o pausar es también una forma de avanzar hacia la superación personal.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Cada viaje corresponde al estudio de los sentidos, las artes y las ciencias como peldaños del intelecto.</div>
+        </div>
+
+        <div id="t3" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Lenguaje</span>
+            <h2 class="detail-title">3. La Palabra de Pase, su origen e interpretación</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Más allá de ser una divisa histórica de protección e identificación, simboliza la pertenencia fraternal y la certeza de que en nuestro interior habita una semilla de vida dispuesta a germinar y dar fruto.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Derivada de Schibboleth (espiga de trigo o torrente de agua), representa la abundancia y la renovación interior.</div>
+        </div>
+
+        <div id="t4" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Lenguaje</span>
+            <h2 class="detail-title">4. La Palabra Sagrada, su origen e interpretation</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Encarna la estabilidad espiritual e intelectual necesaria para construir una columna firme en el templo interior. Nos recuerda la necesidad de cultivar la disciplina para mantenernos erguidos y guiados lejos de la ignorancia.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Corresponde a la columna Jakin (Establecimiento/Fuerza), que representa la firmeza en los principios.</div>
+        </div>
+
+        <div id="t5" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Lenguaje</span>
+            <h2 class="detail-title">5. Los Escalones, su significado, colores e interpretación</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Simbolizan el ascenso gradual del espíritu mediante el cultivo y práctica de las virtudes fundamentales: Inteligencia, Rectitud, Valor, Prudencia y Filantropía.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Representan la elevación del Compañero por encima de la materia hacia la luz de la razón.</div>
+        </div>
+
+        <div id="t6" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Herramientas</span>
+            <h2 class="detail-title">6. La Columna "J", su significado e interpretación</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Es la base y sostén de nuestro crecimiento personal; un emblema de constancia y valor moral que no solo nos permite recibir la luz del conocimiento, sino también proyectarla hacia los demás.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Representa el principio activo y ordenador que impele al iniciado a la acción justa.</div>
+        </div>
+
+        <div id="t7" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Artes Liberales</span>
+            <h2 class="detail-title">7. Los 5 Sentidos del hombre, sus órganos y descripción</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Son las vías de percepción que conectan la psique con el mundo material. Su estudio nos enseña a usarlos con discernimiento, entendiendo que, aunque nos ayudan a interpretar la realidad, también debemos saber escuchar los sentidos internos del espíritu.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> En el Segundo Grado, representan los canales de observación que la razón debe disciplinar para no caer en el engaño de las apariencias.</div>
+        </div>
+
+        <div id="t8" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Herramientas</span>
+            <h2 class="detail-title">8. Órdenes de Arquitectura, su origen e interpretación</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Reflejan la evolución del iniciado desde la simpleza del aprendiz hasta la fortaleza y elegancia del compañero. Muestran que para levantar cualquier obra perdurable se requiere la armonía entre Sabiduría, Fuerza y Belleza.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Corresponden históricamente a los estilos Dórico, Jónico y Corintio, alegorías de la estructura del ser humano.</div>
+        </div>
+
+        <div id="t9" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Artes Liberales</span>
+            <h2 class="detail-title">9. El Masón ante la Ciencia</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Constituye el deber ineludible de buscar la verdad mediante la investigación y el libre examen, combatiendo el oscurantismo y adentrándose en los secretos de la naturaleza con sentido crítico.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> La ciencia en este grado es entendida no solo como técnica, sino como la emancipación de la mente frente al dogmatismo.</div>
+        </div>
+
+        <div id="t10" class="card-detail">
+            <span class="tag tag-base">Zócalo Moral / Base</span>
+            <h2 class="detail-title">10. El Mandil, su significado e interpretación</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Símbolo del trabajo constante del Compañero y de sus responsabilidades hacia la comunidad. Recuerda que las buenas intenciones teóricas deben traducirse en acción práctica, estudio e inteligencia aplicada.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> En el Segundo Grado se lleva con la babeta abatida, indicando que el intelecto y la mente ya participan plenamente en la labor.</div>
+        </div>
+
+        <div id="t11" class="card-detail">
+            <span class="tag tag-piramide">Cúspide Piramidal / Vértice</span>
+            <h2 class="detail-title">11. La Letra "G", su origen e interpretación</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Alegoría central que engloba a la Geometría, la Gnosis, el Genio creador, la Gravitación y la Generación, señalando que el potencial transformador reside en la mente y el espíritu del ser humano.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Representa la Gran Arquitectura del Universo y el principio generador de la verdad.</div>
+        </div>
+
+        <div id="t12" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Artes Liberales</span>
+            <h2 class="detail-title">12. Las Ciencias del Compañero, definición</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Estudiadas a través del Trivium (Gramática, Retórica, Lógica) y el Quadrivium (Aritmética, Geometría, Música, Astronomía), son el vehículo para elevar la percepción humana desde la mera sensibilidad hacia la comprensión racional del universo.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Constituyen el sistema clásico de las Siete Artes Liberales, pilar de la formación intelectual medieval y masónica.</div>
+        </div>
+
+        <div id="t13" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Acción y Deber</span>
+            <h2 class="detail-title">13. Resumen filosófico del Grado</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Es el camino de la iluminación mediante la razón orientada a la acción. Busca que el individuo se instruya para ser útil a la sociedad y transforme su entorno con sabiduría aplicada.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Define la transición de la fase pasiva o receptiva (Aprendiz) a la activa y creadora (Compañero).</div>
+        </div>
+
+        <div id="t14" class="card-detail">
+            <span class="tag tag-base">Zócalo Moral / Base</span>
+            <h2 class="detail-title">14. La Biblia, historia, lugar en que se abre y por qué</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Funciona como emblema de rectitud moral, ciencia e itinerario espiritual. Abierta sobre el altar, sirve de plomada e hilo conductor para asegurar que la libertad intelectual esté respaldada por una conducta ética irreprochable.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Representa el Volumen de la Ley Sagrada o libro del conocimiento supremo, abierto en el Salmo 133 o en Amós 7 según la tradición.</div>
+        </div>
+
+        <div id="t15" class="card-detail">
+            <span class="tag tag-base">Zócalo Moral / Base</span>
+            <h2 class="detail-title">15. Resumen histórico del grado, origen y significado</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Evoca la transición de los antiguos constructores de muros de piedra (masones operativos) a los pensadores modernos (masones especulativos), estructurando el conocimiento de forma gradual para la edificación social e individual.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Nace con la reorganización de los gremios medievales hacia las Grandes Logias del siglo XVIII.</div>
+        </div>
+
+        <div id="t16" class="card-detail">
+            <span class="tag tag-base">Zócalo Moral / Base</span>
+            <h2 class="detail-title">16. Las iniciaciones en los templos antiguos</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Pruebas creadas desde la antigüedad con el propósito de comprobar la discreción, idoneidad, valor y nivel de compromiso de los aspirantes antes de revelarles saberes más profundos.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Se inspiran en los antiguos misterios de Egipto y Grecia (Eleusis), donde se examinaba la templanza del alma.</div>
+        </div>
+
+        <div id="t17" class="card-detail">
+            <span class="tag tag-piramide">Cúspide Piramidal / Vértice</span>
+            <h2 class="detail-title">17. El número 5, su interpretación simbólica</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Representa al hombre consciente y completo (el microcosmos), la quintaesencia, el equilibrio entre lo par e impar, y el firme compromiso con la búsqueda de la verdad.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Es la cifra sagrada del Compañero, marcando su edad simbólica, sus pasos y las luces del templo.</div>
+        </div>
+
+        <div id="t18" class="card-detail">
+            <span class="tag tag-piramide">Cúspide Piramidal / Vértice</span>
+            <h2 class="detail-title">18. La Estrella de 5 puntas (Pentagrama), origen y significado</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Es la Estrella Flamígera, alegoría del ser humano en armonía perfecta cuya inteligencia y voluntad gobiernan rectamente sobre los cuatro elementos de la naturaleza material.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Emblema del hombre realizado y de la luz de la razón proyectada sobre el caos.</div>
+        </div>
+
+        <div id="t19" class="card-detail">
+            <span class="tag tag-piramide">Cúspide Piramidal / Vértice</span>
+            <h2 class="detail-title">19. La Piedra Cúbica de Punta, descripción e interpretación</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Estructura que combina la estabilidad moral del cubo con la aspiración elevada de la pirámide; representa el trabajo acabado que insta al autosacrificio y perfeccionamiento en favor del bien común.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Símbolo del trabajo intelectual consumado y de la integración de la ciencia con la trascendencia.</div>
+        </div>
+
+        <div id="t20" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Acción y Deber</span>
+            <h2 class="detail-title">20. Objeto del Grado de Compañero</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Preparar al iniciado mediante la instrucción continua para dominar el estudio de la naturaleza y la búsqueda incesante de la verdad antes de afrontar las etapas superiores del ser.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Su fin es capacitar al obrero en el manejo hábil de sus herramientas de trabajo intelectual.</div>
+        </div>
+
+        <div id="t21" class="card-detail">
+            <span class="tag tag-cubo">Cuerpo Cúbico / Acción y Deber</span>
+            <h2 class="detail-title">21. Ciencia y Virtud</h2>
+            <div class="box-sintesis"><strong>Síntesis:</strong> Dos pilares indisolubles: la ciencia sin virtud se vuelve destructiva, mientras que la virtud sin ciencia resulta inoperante. Juntas permiten conocer las cosas por sus causas y vencer las pasiones desordenadas.</div>
+            <div class="box-complemento"><strong>Complemento:</strong> Es la máxima del Compañero: instruir la mente para actuar con rectitud y justicia.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTopic(id) {
+    var cards = document.querySelectorAll('.card-detail');
+    cards.forEach(function(card) {
+        card.classList.remove('active');
+    });
+    
+    var activeCard = document.getElementById(id);
+    if (activeCard) {
+        activeCard.classList.add('active');
+    }
+}
+</script>
+
+</body>
+</html>
