@@ -72,26 +72,50 @@ p.subtitle {
 /* ── Container Split ── */
 .container {
   display: grid;
-  grid-template-columns: 480px 1fr;
+  grid-template-columns: 520px 1fr;
   gap: 40px;
   align-items: start;
 }
 
-/* ── Visual Map (Piedra) ── */
+/* ── Visual Map (Estructura Piramidal) ── */
 .visual-map {
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex; 
+  flex-direction: column; 
+  align-items: center;
+  gap: 16px;
   position: sticky; top: 40px;
 }
 
 .stone-section {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 24px;
-  padding: 24px;
+  border-radius: 20px;
+  padding: 20px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   transition: transform 0.8s var(--silk-ease), border-color 0.8s var(--silk-ease), box-shadow 0.8s var(--silk-ease);
   position: relative; overflow: hidden;
+  text-align: center;
+}
+
+/* Escalado de anchos y bordes para proyectar la pirámide sin cortar contenido */
+.piramide-zone { 
+  width: 80%; 
+  padding: 24px 16px 20px 16px;
+  clip-path: polygon(50% 6.7%, 100% 93.3%, 0% 93.3%);
+  border-top: 2px solid rgba(255, 0, 0, 1.0);
+}
+
+.cubo-zone { 
+  width: 80%; 
+  padding: 24px 20px 20px 20px;
+  border-top: 2px solid rgba(0, 255, 0, 1.0);
+}
+
+.base-zone { 
+  width: 100%; 
+  padding: 24px 24px 20px 24px;
+  border-top: 2px solid rgba(0, 0, 255, 1.0);
 }
 
 .stone-section::before {
@@ -102,29 +126,28 @@ p.subtitle {
 .stone-section:hover::before { opacity: 1; }
 .stone-section:hover { border-color: rgba(176, 184, 196, 0.2); }
 
-.piramide-zone { border-top: 2px solid rgba(254, 240, 138, 0.3); }
-.cubo-zone { border-top: 2px solid rgba(147, 197, 253, 0.3); }
-.base-zone { border-top: 2px solid rgba(203, 213, 225, 0.3); }
-
 .section-title {
-  font-size: 1rem; font-weight: 500; letter-spacing: -0.01em; color: var(--ivory); margin-bottom: 4px;
+  font-size: 0.95rem; font-weight: 500; letter-spacing: -0.01em; color: var(--ivory); margin-bottom: 2px;
 }
 .section-subtitle {
-  font-size: 8pt; margin-bottom: 16px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 500;
+  font-size: 7.5pt; margin-bottom: 12px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 500;
 }
 
-.grid-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
-.piramide-zone .grid-buttons { grid-template-columns: repeat(2, 1fr); margin: 0 auto; }
+.grid-buttons { display: grid; gap: 8px; justify-content: center; }
+.piramide-zone .grid-buttons { grid-template-columns: repeat(2, 1fr); max-width: 200px; margin: 0 auto; }
+.cubo-zone .grid-buttons { grid-template-columns: repeat(3, 1fr); }
+.base-zone .grid-buttons { grid-template-columns: repeat(5, 1fr); }
 
 .topic-btn {
   background: rgba(42, 46, 53, 0.6);
   border: 1px solid var(--panel-border);
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--slate-light);
-  padding: 10px 8px;
-  font-family: inherit; font-size: 10px; font-weight: 500; letter-spacing: 0.05em;
+  padding: 8px 6px;
+  font-family: inherit; font-size: 9.5px; font-weight: 500; letter-spacing: 0.03em;
   cursor: pointer; text-align: center;
   transition: all 0.4s var(--silk-ease);
+  word-break: break-word;
 }
 
 .topic-btn:hover {
@@ -191,5 +214,7 @@ p.subtitle {
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .container { grid-template-columns: 1fr; }
-  .visual-map { position: static; }
+  .visual-map { position: static; width: 100%; }
+  .piramide-zone { width: 80%; }
+  .cubo-zone { width: 92%; }
 }

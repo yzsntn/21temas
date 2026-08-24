@@ -20,7 +20,7 @@ function showTopic(id) {
     }
 }
 
-// Hero spotlight dynamic effect from reference JS
+// Hero spotlight dynamic effect
 const heroGrid = document.querySelector('.hero-grid');
 let gx = 0, gy = 0, tx = 0, ty = 0;
 
