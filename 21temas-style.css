@@ -1,18 +1,27 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --base-deep: #0F1115;
-  --base-mid: #161A20;
-  --base-soft: #1C2128;
-  --slate-warm: #6B7280;
-  --slate-light: #9CA3AF;
-  --graphite: #2A2E35;
-  --graphite-soft: #3D424A;
-  --ivory: #E5E7EB;
-  --ivory-muted: #C9CDD4;
-  --silver: #B0B8C4;
-  --panel-bg: rgba(22, 26, 32, 0.55);
-  --panel-border: rgba(156, 163, 175, 0.08);
+  /* Paleta Mineral de Piedras Esculpidas */
+  --base-deep: #0D0E10;         /* Pizarra negra / Basalto profundo */
+  --base-mid: #15171B;          /* Diorita oscura */
+  --base-soft: #1E2127;         /* Grafito mate */
+  
+  /* Texturas Orgánicas Minerales */
+  --stone-sandstone: #C8A97E;   /* Arenisca Dorada / Cantera */
+  --stone-sandstone-bg: rgba(200, 169, 126, 0.14);
+  
+  --stone-granite: #949DAA;     /* Granito Gris / Silicio */
+  --stone-granite-bg: rgba(148, 157, 170, 0.12);
+  
+  --stone-slate: #768275;       /* Pizarra Verde Olivo / Lutita */
+  --stone-slate-bg: rgba(118, 130, 117, 0.14);
+
+  --stone-limestone: #D8D2C4;   /* Caliza clara / Mármol rústico */
+  --stone-travertine: #B5AC9C;   /* Travertino seco */
+  --stone-quartz: #E5DFC8;      /* Vena de cuarzo / Feldespato */
+  
+  --panel-bg: rgba(26, 29, 35, 0.72);
+  --panel-border: rgba(216, 210, 196, 0.15);
   --silk-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -21,7 +30,7 @@ html { scroll-behavior: smooth; font-size: 16px; }
 body {
   font-family: 'Montserrat', sans-serif;
   background: var(--base-deep);
-  color: var(--ivory);
+  color: var(--stone-limestone);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -29,15 +38,15 @@ body {
 /* ── Grain & Atmosphere ── */
 .atmosphere {
   position: fixed; inset: 0; z-index: 0;
-  background: linear-gradient(180deg, #0F1115 0%, #161A20 35%, #1C2128 70%, #0D0F13 100%);
+  background: linear-gradient(180deg, #0D0E10 0%, #15171B 40%, #1E2127 75%, #0A0B0D 100%);
 }
 
 .hero-grid {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   --mx: 50%; --my: 50%;
   background-image:
-    linear-gradient(to right, rgba(156,163,175,0.12) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(156,163,175,0.12) 1px, transparent 1px);
+    linear-gradient(to right, rgba(216,210,196,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(216,210,196,0.06) 1px, transparent 1px);
   background-size: 100px 100px;
   background-position: center bottom;
   -webkit-mask-image: radial-gradient(circle 400px at var(--mx) var(--my), rgba(0,0,0,1) 0%, transparent 80%);
@@ -55,18 +64,18 @@ body {
   backdrop-filter: blur(20px); margin-bottom: 20px;
 }
 .header-badge-dot {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--silver);
-  box-shadow: 0 0 8px rgba(176,184,196,0.4); animation: pulse 3s ease-in-out infinite;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--stone-quartz);
+  box-shadow: 0 0 10px rgba(229, 223, 200, 0.5); animation: pulse 3s ease-in-out infinite;
 }
-.header-badge span { font-size: 9px; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: var(--slate-light); }
+.header-badge span { font-size: 9px; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: var(--stone-travertine); }
 
 h1 {
   font-size: clamp(2.2rem, 4.5vw, 3.8rem); font-weight: 300;
-  letter-spacing: -0.04em; line-height: 1.15; color: var(--ivory); margin-bottom: 16px;
+  letter-spacing: -0.04em; line-height: 1.15; color: var(--stone-limestone); margin-bottom: 16px;
 }
 p.subtitle {
   font-size: clamp(0.9rem, 1.2vw, 1.05rem); font-weight: 300; line-height: 1.7;
-  color: var(--slate-light); max-width: 640px; margin: 0 auto;
+  color: var(--stone-travertine); max-width: 640px; margin: 0 auto;
 }
 
 /* ── Container Split ── */
@@ -89,60 +98,70 @@ p.subtitle {
 .stone-section {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 20px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   transition: transform 0.8s var(--silk-ease), border-color 0.8s var(--silk-ease), box-shadow 0.8s var(--silk-ease);
-  position: relative; overflow: hidden;
+  position: relative;
   text-align: center;
 }
 
-/* Escalado de anchos y bordes para proyectar la pirámide sin cortar contenido */
+/* Cúspide: Arenisca / Cantera Cálida */
 .piramide-zone { 
   width: 80%; 
-  padding: 24px 16px 20px 16px;
+  padding: 28px 24px 20px 24px;
+  background: rgba(48, 41, 32, 0.7);
   clip-path: polygon(50% 6.7%, 100% 93.3%, 0% 93.3%);
-  border-top: 2px solid rgba(255, 0, 0, 1.0);
+  border-top: 2px solid var(--stone-sandstone);
 }
 
+/* Cuerpo: Granito Gris / Silicio */
 .cubo-zone { 
-  width: 80%; 
+  width: 84%; 
   padding: 24px 20px 20px 20px;
-  border-top: 2px solid rgba(0, 255, 0, 1.0);
+  background: rgba(27, 32, 29, 0.7);
+  border-top: 2px solid var(--stone-granite);
 }
 
+/* Base: Lutita / Pizarra Olivo */
 .base-zone { 
   width: 100%; 
   padding: 24px 24px 20px 24px;
-  border-top: 2px solid rgba(0, 0, 255, 1.0);
+  background: rgba(33, 37, 43, 0.8);
+  border-top: 2px solid var(--stone-slate);
 }
 
 .stone-section::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit;
-  background: linear-gradient(160deg, rgba(210,215,220,0.03) 0%, transparent 40%);
+  background: linear-gradient(160deg, rgba(225, 220, 205, 0.05) 0%, transparent 40%);
   pointer-events: none; opacity: 0; transition: opacity 0.8s var(--silk-ease);
 }
 .stone-section:hover::before { opacity: 1; }
-.stone-section:hover { border-color: rgba(176, 184, 196, 0.2); }
+.stone-section:hover { border-color: rgba(216, 210, 196, 0.35); }
 
 .section-title {
-  font-size: 0.95rem; font-weight: 500; letter-spacing: -0.01em; color: var(--ivory); margin-bottom: 2px;
+  font-size: 0.95rem; font-weight: 500; letter-spacing: -0.01em; color: var(--stone-limestone); margin-bottom: 2px;
 }
 .section-subtitle {
   font-size: 7.5pt; margin-bottom: 12px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 500;
 }
 
+.piramide-zone .section-subtitle { color: var(--stone-sandstone); }
+.cubo-zone .section-subtitle { color: var(--stone-granite); }
+.base-zone .section-subtitle { color: var(--stone-slate); }
+
 .grid-buttons { display: grid; gap: 8px; justify-content: center; }
-.piramide-zone .grid-buttons { grid-template-columns: repeat(2, 1fr); max-width: 200px; margin: 0 auto; }
+.piramide-zone .grid-buttons { grid-template-columns: repeat(2, 1fr); max-width: 210px; margin: 0 auto; }
 .cubo-zone .grid-buttons { grid-template-columns: repeat(3, 1fr); }
 .base-zone .grid-buttons { grid-template-columns: repeat(5, 1fr); }
 
+/* Botones con estilo sillar/bloque labrado */
 .topic-btn {
-  background: rgba(42, 46, 53, 0.6);
+  background: rgba(35, 38, 46, 0.85);
   border: 1px solid var(--panel-border);
-  border-radius: 10px;
-  color: var(--slate-light);
+  border-radius: 8px;
+  color: var(--stone-travertine);
   padding: 8px 6px;
   font-family: inherit; font-size: 9.5px; font-weight: 500; letter-spacing: 0.03em;
   cursor: pointer; text-align: center;
@@ -151,17 +170,17 @@ p.subtitle {
 }
 
 .topic-btn:hover {
-  background: rgba(176, 184, 196, 0.12);
-  border-color: rgba(176, 184, 196, 0.3);
-  color: var(--ivory);
+  background: rgba(216, 210, 196, 0.15);
+  border-color: rgba(229, 223, 200, 0.4);
+  color: var(--stone-limestone);
   transform: translateY(-2px);
 }
 
 .topic-btn.active-btn {
-  background: linear-gradient(135deg, var(--silver), var(--slate-light));
+  background: linear-gradient(135deg, #D8D2C4, #B5AC9C);
   color: var(--base-deep); font-weight: 600;
   border-color: transparent;
-  box-shadow: 0 4px 20px rgba(176,184,196,0.2);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
 }
 
 /* ── Panel de Detalles ── */
@@ -188,33 +207,46 @@ p.subtitle {
   display: inline-block; font-size: 9px; font-weight: 600; letter-spacing: 0.2em;
   text-transform: uppercase; padding: 6px 14px; border-radius: 100px; margin-bottom: 20px;
 }
-.tag-piramide { background: rgba(254, 240, 138, 0.1); color: #fef08a; border: 1px solid rgba(254, 240, 138, 0.2); }
-.tag-cubo { background: rgba(147, 197, 253, 0.1); color: #93c5fd; border: 1px solid rgba(147, 197, 253, 0.2); }
-.tag-base { background: rgba(203, 213, 225, 0.1); color: #cbd5e1; border: 1px solid rgba(203, 213, 225, 0.2); }
+.tag-piramide { 
+  background: var(--stone-sandstone-bg); 
+  color: var(--stone-sandstone); 
+  border: 1px solid rgba(200, 169, 126, 0.3); 
+}
+.tag-cubo { 
+  background: var(--stone-slate-bg); 
+  color: var(--stone-slate); 
+  border: 1px solid rgba(118, 130, 117, 0.3); 
+}
+.tag-base { 
+  background: var(--stone-granite-bg); 
+  color: var(--stone-granite); 
+  border: 1px solid rgba(148, 157, 170, 0.3); 
+}
 
 .detail-title {
-  font-size: 1.6rem; font-weight: 400; letter-spacing: -0.02em; color: var(--ivory); margin-bottom: 28px; line-height: 1.3;
+  font-size: 1.6rem; font-weight: 400; letter-spacing: -0.02em; color: var(--stone-limestone); margin-bottom: 28px; line-height: 1.3;
 }
 
 .box-sintesis, .box-complemento {
-  background: rgba(15, 17, 21, 0.6);
+  background: rgba(13, 14, 16, 0.7);
   border: 1px solid var(--panel-border);
   border-radius: 20px;
   padding: 24px;
   margin-bottom: 20px;
-  font-size: 0.92rem; font-weight: 300; line-height: 1.8; color: var(--slate-light);
+  font-size: 0.92rem; font-weight: 300; line-height: 1.8; color: var(--stone-travertine);
 }
 
 .box-sintesis strong, .box-complemento strong {
-  color: var(--silver); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 8px;
+  color: var(--stone-quartz); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 8px;
 }
 
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .container { grid-template-columns: 1fr; }
   .visual-map { position: static; width: 100%; }
   .piramide-zone { width: 80%; }
-  .cubo-zone { width: 92%; }
+  .cubo-zone { width: 90%; }
+  .base-zone { width: 100%; }
 }
