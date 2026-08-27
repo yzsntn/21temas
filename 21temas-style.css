@@ -113,7 +113,7 @@ p.subtitle {
   padding: 28px 24px 20px 24px;
   background: rgba(48, 41, 32, 0.7);
   clip-path: polygon(50% 6.7%, 100% 93.3%, 0% 93.3%);
-  border-top: 2px solid var(--stone-sandstone);
+  border-top: 4px solid var(--stone-sandstone);
 }
 
 /* Cuerpo: Granito Gris / Silicio */
@@ -121,7 +121,8 @@ p.subtitle {
   width: 84%; 
   padding: 24px 20px 20px 20px;
   background: rgba(27, 32, 29, 0.7);
-  border-top: 2px solid var(--stone-granite);
+  border-radius: 0px;
+  border-top: 4px solid var(--stone-granite);
 }
 
 /* Base: Lutita / Pizarra Olivo */
@@ -129,7 +130,7 @@ p.subtitle {
   width: 100%; 
   padding: 24px 24px 20px 24px;
   background: rgba(33, 37, 43, 0.8);
-  border-top: 2px solid var(--stone-slate);
+  border-top: 4px solid var(--stone-slate);
 }
 
 .stone-section::before {
