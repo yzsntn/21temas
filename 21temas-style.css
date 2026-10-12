@@ -1,32 +1,24 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  /* Paleta Mineral de Piedras Esculpidas */
-  --base-deep: #0D0E10;         /* Pizarra negra / Basalto profundo */
-  --base-mid: #15171B;          /* Diorita oscura */
-  --base-soft: #1E2127;         /* Grafito mate */
-  
-  /* Texturas Orgánicas Minerales */
-  --stone-sandstone: #C8A97E;   /* Arenisca Dorada / Cantera */
+  --base-deep: #0D0E10;
+  --base-mid: #15171B;
+  --base-soft: #1E2127;
+  --stone-sandstone: #C8A97E;
   --stone-sandstone-bg: rgba(200, 169, 126, 0.14);
-  
-  --stone-granite: #949DAA;     /* Granito Gris / Silicio */
+  --stone-granite: #949DAA;
   --stone-granite-bg: rgba(148, 157, 170, 0.12);
-  
-  --stone-slate: #768275;       /* Pizarra Verde Olivo / Lutita */
+  --stone-slate: #768275;
   --stone-slate-bg: rgba(118, 130, 117, 0.14);
-
-  --stone-limestone: #D8D2C4;   /* Caliza clara / Mármol rústico */
-  --stone-travertine: #B5AC9C;   /* Travertino seco */
-  --stone-quartz: #E5DFC8;      /* Vena de cuarzo / Feldespato */
-  
+  --stone-limestone: #D8D2C4;
+  --stone-travertine: #B5AC9C;
+  --stone-quartz: #E5DFC8;
   --panel-bg: rgba(26, 29, 35, 0.72);
   --panel-border: rgba(216, 210, 196, 0.15);
   --silk-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html { scroll-behavior: smooth; font-size: 16px; }
-
 body {
   font-family: 'Montserrat', sans-serif;
   background: var(--base-deep);
@@ -35,28 +27,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Grain & Atmosphere ── */
 .atmosphere {
   position: fixed; inset: 0; z-index: 0;
   background: linear-gradient(180deg, #0D0E10 0%, #15171B 40%, #1E2127 75%, #0A0B0D 100%);
 }
 
-.hero-grid {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  --mx: 50%; --my: 50%;
-  background-image:
-    linear-gradient(to right, rgba(216,210,196,0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(216,210,196,0.06) 1px, transparent 1px);
-  background-size: 100px 100px;
-  background-position: center bottom;
-  -webkit-mask-image: radial-gradient(circle 400px at var(--mx) var(--my), rgba(0,0,0,1) 0%, transparent 80%);
-  mask-image: radial-gradient(circle 400px at var(--mx) var(--my), rgba(0,0,0,1) 0%, transparent 80%);
-}
+.main { position: relative; z-index: 10; max-width: 1360px; margin: 0 auto; padding: 48px 32px 60px; }
 
-/* ── Header & Layout ── */
-.main { position: relative; z-index: 10; max-width: 1280px; margin: 0 auto; padding: 60px 40px; }
-
-.header-section { text-align: center; margin-bottom: 60px; }
+.header-section { text-align: center; margin-bottom: 36px; }
 .header-badge {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 8px 20px; border-radius: 100px;
@@ -65,189 +43,93 @@ body {
 }
 .header-badge-dot {
   width: 6px; height: 6px; border-radius: 50%; background: var(--stone-quartz);
-  box-shadow: 0 0 10px rgba(229, 223, 200, 0.5); animation: pulse 3s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(229,223,200,.5); animation: pulse 3s ease-in-out infinite;
 }
-.header-badge span { font-size: 9px; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: var(--stone-travertine); }
+.header-badge span { font-size: 9px; font-weight: 600; letter-spacing: .25em; text-transform: uppercase; color: var(--stone-travertine); }
+h1 { font-size: clamp(2rem, 4.2vw, 3.4rem); font-weight: 300; letter-spacing: -.04em; line-height: 1.15; margin-bottom: 14px; }
+p.subtitle { font-size: clamp(.9rem, 1.2vw, 1.02rem); font-weight: 300; line-height: 1.7; color: var(--stone-travertine); max-width: 680px; margin: 0 auto; }
 
-h1 {
-  font-size: clamp(2.2rem, 4.5vw, 3.8rem); font-weight: 300;
-  letter-spacing: -0.04em; line-height: 1.15; color: var(--stone-limestone); margin-bottom: 16px;
-}
-p.subtitle {
-  font-size: clamp(0.9rem, 1.2vw, 1.05rem); font-weight: 300; line-height: 1.7;
-  color: var(--stone-travertine); max-width: 640px; margin: 0 auto;
-}
+.layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr); gap: 32px; align-items: start; }
 
-/* ── Container Split ── */
-.container {
-  display: grid;
-  grid-template-columns: 520px 1fr;
-  gap: 40px;
-  align-items: start;
+/* ── Escenario 3D ── */
+.stage {
+  position: sticky; top: 24px;
+  height: min(78vh, 760px); min-height: 460px;
+  border: 1px solid var(--panel-border); border-radius: 28px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(40,44,52,.55), rgba(13,14,16,.85) 70%);
+  overflow: hidden;
 }
+#three { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+#three.grabbing { cursor: grabbing; }
+#three.pointing { cursor: pointer; }
 
-/* ── Visual Map (Estructura Piramidal) ── */
-.visual-map {
-  display: flex; 
-  flex-direction: column; 
-  align-items: center;
-  gap: 16px;
-  position: sticky; top: 40px;
+.stage-hint {
+  position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; pointer-events: none;
+  font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--stone-travertine); opacity: .75;
 }
+.stage-tools { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; }
+.tool-btn {
+  background: rgba(35,38,46,.85); border: 1px solid var(--panel-border); border-radius: 100px;
+  color: var(--stone-travertine); padding: 8px 14px; font-family: inherit; font-size: 10px; font-weight: 500;
+  letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: all .4s var(--silk-ease);
+}
+.tool-btn:hover { background: rgba(216,210,196,.15); color: var(--stone-limestone); border-color: rgba(229,223,200,.4); }
 
-.stone-section {
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: 16px;
-  padding: 20px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  transition: transform 0.8s var(--silk-ease), border-color 0.8s var(--silk-ease), box-shadow 0.8s var(--silk-ease);
-  position: relative;
-  text-align: center;
+.hover-tip {
+  position: absolute; pointer-events: none; opacity: 0; transform: translate(14px, 14px);
+  background: rgba(13,14,16,.92); border: 1px solid var(--panel-border); border-radius: 10px;
+  padding: 7px 12px; font-size: 11px; font-weight: 500; color: var(--stone-limestone);
+  transition: opacity .25s; white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* Cúspide: Arenisca / Cantera Cálida */
-.piramide-zone { 
-  width: 80%; 
-  padding: 28px 24px 20px 24px;
-  background: rgba(48, 41, 32, 0.7);
-  clip-path: polygon(50% 6.7%, 100% 93.3%, 0% 93.3%);
-  border-top: 4px solid var(--stone-sandstone);
-}
+.legend { position: absolute; left: 16px; top: 16px; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+.legend span { display: flex; align-items: center; gap: 8px; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--stone-travertine); }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 
-/* Cuerpo: Granito Gris / Silicio */
-.cubo-zone { 
-  width: 84%; 
-  padding: 24px 20px 20px 20px;
-  background: rgba(27, 32, 29, 0.7);
-  border-radius: 0px;
-  border-top: 4px solid var(--stone-granite);
-}
-
-/* Base: Lutita / Pizarra Olivo */
-.base-zone { 
-  width: 100%; 
-  padding: 24px 24px 20px 24px;
-  background: rgba(33, 37, 43, 0.8);
-  border-top: 4px solid var(--stone-slate);
-}
-
-.stone-section::before {
-  content: ''; position: absolute; inset: 0; border-radius: inherit;
-  background: linear-gradient(160deg, rgba(225, 220, 205, 0.05) 0%, transparent 40%);
-  pointer-events: none; opacity: 0; transition: opacity 0.8s var(--silk-ease);
-}
-.stone-section:hover::before { opacity: 1; }
-.stone-section:hover { border-color: rgba(216, 210, 196, 0.35); }
-
-.section-title {
-  font-size: 0.95rem; font-weight: 500; letter-spacing: -0.01em; color: var(--stone-limestone); margin-bottom: 2px;
-}
-.section-subtitle {
-  font-size: 7.5pt; margin-bottom: 12px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 500;
-}
-
-.piramide-zone .section-subtitle { color: var(--stone-sandstone); }
-.cubo-zone .section-subtitle { color: var(--stone-granite); }
-.base-zone .section-subtitle { color: var(--stone-slate); }
-
-.grid-buttons { display: grid; gap: 8px; justify-content: center; }
-.piramide-zone .grid-buttons { grid-template-columns: repeat(2, 1fr); max-width: 210px; margin: 0 auto; }
-.cubo-zone .grid-buttons { grid-template-columns: repeat(3, 1fr); }
-.base-zone .grid-buttons { grid-template-columns: repeat(5, 1fr); }
-
-/* Botones con estilo sillar/bloque labrado */
-.topic-btn {
-  background: rgba(35, 38, 46, 0.85);
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
-  color: var(--stone-travertine);
-  padding: 8px 6px;
-  font-family: inherit; font-size: 9.5px; font-weight: 500; letter-spacing: 0.03em;
-  cursor: pointer; text-align: center;
-  transition: all 0.4s var(--silk-ease);
-  word-break: break-word;
-}
-
-.topic-btn:hover {
-  background: rgba(216, 210, 196, 0.15);
-  border-color: rgba(229, 223, 200, 0.4);
-  color: var(--stone-limestone);
-  transform: translateY(-2px);
-}
-
-.topic-btn.active-btn {
-  background: linear-gradient(135deg, #D8D2C4, #B5AC9C);
-  color: var(--base-deep); font-weight: 600;
-  border-color: transparent;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
-}
-
-/* ── Panel de Detalles ── */
+/* ── Panel lateral ── */
+.side { display: flex; flex-direction: column; gap: 20px; }
 .details-panel {
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: 32px;
-  padding: 40px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  min-height: 480px;
-  position: relative;
+  background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 28px;
+  padding: 32px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); min-height: 420px;
 }
+.tag { display: inline-block; font-size: 9px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; padding: 6px 14px; border-radius: 100px; margin-bottom: 18px; }
+.tag-piramide { background: var(--stone-sandstone-bg); color: var(--stone-sandstone); border: 1px solid rgba(200,169,126,.3); }
+.tag-arista { background: var(--stone-granite-bg); color: var(--stone-granite); border: 1px solid rgba(148,157,170,.3); }
+.tag-cara { background: var(--stone-slate-bg); color: var(--stone-slate); border: 1px solid rgba(118,130,117,.3); }
 
-.card-detail {
-  display: none; opacity: 0; transform: translateY(16px);
-  transition: opacity 0.6s var(--silk-ease), transform 0.6s var(--silk-ease);
+.detail-title { font-size: 1.45rem; font-weight: 400; letter-spacing: -.02em; line-height: 1.3; margin-bottom: 24px; }
+.box {
+  background: rgba(13,14,16,.7); border: 1px solid var(--panel-border); border-radius: 18px;
+  padding: 20px 22px; margin-bottom: 16px;
+  font-size: .9rem; font-weight: 300; line-height: 1.8; color: var(--stone-travertine);
 }
-.card-detail.active {
-  display: block; opacity: 1; transform: translateY(0);
-}
+.box strong { color: var(--stone-quartz); font-weight: 600; font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; display: block; margin-bottom: 8px; }
+.fade-in { animation: rise .6s var(--silk-ease); }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
-.tag {
-  display: inline-block; font-size: 9px; font-weight: 600; letter-spacing: 0.2em;
-  text-transform: uppercase; padding: 6px 14px; border-radius: 100px; margin-bottom: 20px;
+.index-panel {
+  background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 28px;
+  padding: 24px; backdrop-filter: blur(20px);
 }
-.tag-piramide { 
-  background: var(--stone-sandstone-bg); 
-  color: var(--stone-sandstone); 
-  border: 1px solid rgba(200, 169, 126, 0.3); 
+.index-group + .index-group { margin-top: 18px; }
+.index-title { font-size: 9px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 10px; }
+.index-title.piramide { color: var(--stone-sandstone); }
+.index-title.arista { color: var(--stone-granite); }
+.index-title.cara { color: var(--stone-slate); }
+.index-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.topic-btn {
+  background: rgba(35,38,46,.85); border: 1px solid var(--panel-border); border-radius: 8px;
+  color: var(--stone-travertine); padding: 7px 10px; font-family: inherit; font-size: 10px; font-weight: 500;
+  letter-spacing: .03em; cursor: pointer; transition: all .4s var(--silk-ease);
 }
-.tag-cubo { 
-  background: var(--stone-slate-bg); 
-  color: var(--stone-slate); 
-  border: 1px solid rgba(118, 130, 117, 0.3); 
-}
-.tag-base { 
-  background: var(--stone-granite-bg); 
-  color: var(--stone-granite); 
-  border: 1px solid rgba(148, 157, 170, 0.3); 
-}
+.topic-btn:hover { background: rgba(216,210,196,.15); border-color: rgba(229,223,200,.4); color: var(--stone-limestone); transform: translateY(-2px); }
+.topic-btn.active-btn { background: linear-gradient(135deg, #D8D2C4, #B5AC9C); color: var(--base-deep); font-weight: 600; border-color: transparent; box-shadow: 0 4px 18px rgba(0,0,0,.5); }
 
-.detail-title {
-  font-size: 1.6rem; font-weight: 400; letter-spacing: -0.02em; color: var(--stone-limestone); margin-bottom: 28px; line-height: 1.3;
-}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
 
-.box-sintesis, .box-complemento {
-  background: rgba(13, 14, 16, 0.7);
-  border: 1px solid var(--panel-border);
-  border-radius: 20px;
-  padding: 24px;
-  margin-bottom: 20px;
-  font-size: 0.92rem; font-weight: 300; line-height: 1.8; color: var(--stone-travertine);
-}
-
-.box-sintesis strong, .box-complemento strong {
-  color: var(--stone-quartz); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 8px;
-}
-
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-/* ── Responsive ── */
 @media (max-width: 1024px) {
-  .container { grid-template-columns: 1fr; }
-  .visual-map { position: static; width: 100%; }
-  .piramide-zone { width: 80%; }
-  .cubo-zone { width: 90%; }
-  .base-zone { width: 100%; }
+  .main { padding: 32px 16px 48px; }
+  .layout { grid-template-columns: 1fr; }
+  .stage { position: relative; top: 0; height: 62vh; min-height: 380px; }
+  .details-panel { padding: 24px; min-height: 0; }
 }
