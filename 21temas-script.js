@@ -1,10 +1,10 @@
 /* ═══ Datos: los 21 temas ═══ */
 const GROUPS = {
-  piramide: { label: 'Cúspide Piramidal · Cara de pirámide', index: 'Pirámide · Trascendencia', color: 0xC8A97E, hover: 0xDDC298 },
-  arista:   { label: 'Cuerpo Cúbico · Arista',               index: 'Aristas · Ciencia, artes y deber', color: 0x949DAA, hover: 0xB6BFCB },
-  cara:     { label: 'Base Moral · Cara del cubo',           index: 'Caras del cubo · Fundamentos', color: 0x768275, hover: 0x93A092 }
+  piramide: { label: 'Cúspide Piramidal · Cara de pirámide', index: 'Pirámide · Trascendencia', color: 0xD2B27F, hover: 0xE3C896 },
+  arista:   { label: 'Cuerpo Cúbico · Arista',               index: 'Aristas · Ciencia, artes y deber', color: 0xA3A7AC, hover: 0xBFC3C7 },
+  cara:     { label: 'Base Moral · Cara del cubo',           index: 'Caras del cubo · Fundamentos', color: 0x8E9B88, hover: 0xA6B3A0 }
 };
-const SELECT_COLOR = 0xE5DFC8;
+const SELECT_COLOR = 0xF3E6BE;
 
 const TOPICS = {
   t1:  { n:1,  short:'Resumen 1º Grado', grp:'cara', title:'Resumen simbólico del Primer Grado',
@@ -114,19 +114,60 @@ controls.enablePan = false;
 controls.autoRotate = true;
 controls.autoRotateSpeed = 0.8;
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-const key = new THREE.DirectionalLight(0xfff1dc, 0.9); key.position.set(5, 8, 6); scene.add(key);
-const fill = new THREE.DirectionalLight(0x9db2d6, 0.35); fill.position.set(-6, -2, -5); scene.add(fill);
+scene.add(new THREE.AmbientLight(0xfff3dc, 0.72));
+const key = new THREE.DirectionalLight(0xffe9c4, 0.85); key.position.set(5, 8, 6); scene.add(key);
+const fill = new THREE.DirectionalLight(0xb8c4d8, 0.3); fill.position.set(-6, -2, -5); scene.add(fill);
 
 const piedra = new THREE.Group();
 scene.add(piedra);
 
+/* Sombra suave bajo la piedra */
+(function () {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d'); const g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+  g.addColorStop(0, 'rgba(50,34,14,.45)'); g.addColorStop(.55, 'rgba(50,34,14,.18)'); g.addColorStop(1, 'rgba(50,34,14,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(6.5, 6.5),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.y = -1.08; scene.add(m);
+})();
+
 const items = {};       // id -> { mesh, grp, dir }
 const pickables = [];
 
+/* Textura procedural de piedra (grano, manchas y finas grietas) */
+function stoneTexture(seed) {
+  const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+  const ctx = c.getContext('2d');
+  let r = seed; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  ctx.fillStyle = '#e6e2d8'; ctx.fillRect(0, 0, S, S);
+  for (let i = 0; i < 26; i++) {
+    const x = rnd() * S, y = rnd() * S, rad = 30 + rnd() * 70;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+    g.addColorStop(0, rnd() < .5 ? 'rgba(90,80,60,.11)' : 'rgba(255,255,250,.15)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
+  }
+  for (let i = 0; i < 5500; i++) {
+    ctx.fillStyle = rnd() < .55 ? 'rgba(60,50,35,' + (.05 + rnd() * .1) + ')' : 'rgba(255,255,248,' + (.06 + rnd() * .1) + ')';
+    ctx.fillRect(rnd() * S, rnd() * S, 1 + rnd() * 2, 1 + rnd() * 2);
+  }
+  ctx.strokeStyle = 'rgba(50,40,25,.26)'; ctx.lineWidth = .8;
+  for (let k = 0; k < 4; k++) {
+    let x = rnd() * S, y = rnd() * S; ctx.beginPath(); ctx.moveTo(x, y);
+    for (let j = 0; j < 14; j++) { x += (rnd() - .5) * 34; y += (rnd() - .5) * 34; ctx.lineTo(x, y); }
+    ctx.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 2); t.anisotropy = 4;
+  return t;
+}
+const STONE_TEX = stoneTexture(1234567);
+const relabel = [];   // redibuja rótulos cuando las tipografías terminan de cargar
+
 function makeMat(grp) {
   return new THREE.MeshStandardMaterial({
-    color: GROUPS[grp].color, roughness: 0.88, metalness: 0.05,
+    color: GROUPS[grp].color, roughness: 0.92, metalness: 0.02,
+    map: STONE_TEX, bumpMap: STONE_TEX, bumpScale: 0.9,
     flatShading: true, side: THREE.DoubleSide, emissive: 0x000000
   });
 }
@@ -148,35 +189,53 @@ function wrapText(ctx, text, maxW) {
 }
 function labelTexture(num, short) {
   const c = document.createElement('canvas'); c.width = c.height = 512;
-  const ctx = c.getContext('2d');
-  ctx.textAlign = 'center'; ctx.fillStyle = '#E5DFC8';
-  ctx.font = '200 150px Montserrat, sans-serif';
-  ctx.fillText(String(num), 256, 230);
-  ctx.fillStyle = 'rgba(229,223,200,.88)';
-  ctx.font = '500 38px Montserrat, sans-serif';
-  const lines = wrapText(ctx, short, 400);
-  lines.forEach((l, i) => ctx.fillText(l.toUpperCase(), 256, 295 + i * 46));
+  const ctx = c.getContext('2d'); ctx.textAlign = 'center';
+  const draw = (dx, dy, colNum, colTxt) => {
+    ctx.fillStyle = colNum; ctx.font = '400 128px Cinzel, "Cormorant Garamond", serif';
+    ctx.fillText(String(num), 256 + dx, 200 + dy);
+    ctx.fillStyle = colTxt; ctx.font = '600 46px Cinzel, "Cormorant Garamond", serif';
+    const lines = wrapText(ctx, short.toUpperCase(), 450).slice(0, 3);
+    lines.forEach((l, i) => ctx.fillText(l, 256 + dx, 282 + dy + i * 56));
+  };
+  draw(2, 2, 'rgba(255,248,230,.55)', 'rgba(255,248,230,.55)');   // relieve claro
+  draw(0, 0, 'rgba(43,34,24,.9)', 'rgba(43,34,24,.9)');           // grabado en tinta
   const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
 }
 function addLabelPlane(pos, normal, size, id) {
   const tp = TOPICS[id];
-  const m = new THREE.Mesh(
-    new THREE.PlaneGeometry(size, size),
-    new THREE.MeshBasicMaterial({ map: labelTexture(tp.n, tp.short), transparent: true, depthWrite: false })
-  );
+  const mat = new THREE.MeshBasicMaterial({ map: labelTexture(tp.n, tp.short), transparent: true, depthWrite: false });
+  relabel.push(() => { mat.map.dispose(); mat.map = labelTexture(tp.n, tp.short); mat.needsUpdate = true; });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
   m.position.copy(pos).addScaledVector(normal, 0.02);
   m.lookAt(pos.clone().add(normal));
   piedra.add(m);
 }
-function badgeSprite(num) {
-  const c = document.createElement('canvas'); c.width = c.height = 128;
+function badgeTexture(num, short) {
+  const W = 640, H = 160;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
   const ctx = c.getContext('2d');
-  ctx.beginPath(); ctx.arc(64, 64, 56, 0, Math.PI * 2);
-  ctx.fillStyle = '#15171B'; ctx.fill();
-  ctx.lineWidth = 5; ctx.strokeStyle = '#B6BFCB'; ctx.stroke();
-  ctx.fillStyle = '#E5DFC8'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = '600 56px Montserrat, sans-serif'; ctx.fillText(String(num), 64, 68);
-  return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
+  const r = 14, x0 = 6, y0 = 6, w = W - 12, h = H - 12;
+  ctx.beginPath();
+  ctx.moveTo(x0 + r, y0); ctx.arcTo(x0 + w, y0, x0 + w, y0 + h, r); ctx.arcTo(x0 + w, y0 + h, x0, y0 + h, r);
+  ctx.arcTo(x0, y0 + h, x0, y0, r); ctx.arcTo(x0, y0, x0 + w, y0, r); ctx.closePath();
+  ctx.fillStyle = '#EFE5CE'; ctx.fill();
+  ctx.lineWidth = 6; ctx.strokeStyle = '#8C6A3A'; ctx.stroke();
+  ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(140,106,58,.55)'; ctx.strokeRect(x0 + 10, y0 + 10, w - 20, h - 20);
+  // número
+  ctx.fillStyle = '#8C6A3A'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '600 70px Cinzel, "Cormorant Garamond", serif'; ctx.fillText(String(num), 96, 84);
+  ctx.fillRect(168, 40, 2, 80);
+  // nombre (se reduce hasta caber)
+  let size = 44; const name = short.toUpperCase();
+  ctx.font = '600 ' + size + 'px Cinzel, "Cormorant Garamond", serif';
+  while (ctx.measureText(name).width > 420 && size > 22) { size -= 2; ctx.font = '600 ' + size + 'px Cinzel, "Cormorant Garamond", serif'; }
+  ctx.fillStyle = '#2B2218'; ctx.textAlign = 'center'; ctx.fillText(name, 392, 84);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+}
+function badgeSprite(num, short) {
+  const mat = new THREE.SpriteMaterial({ map: badgeTexture(num, short), transparent: true });
+  relabel.push(() => { mat.map.dispose(); mat.map = badgeTexture(num, short); mat.needsUpdate = true; });
+  return new THREE.Sprite(mat);
 }
 
 /* Caras del cubo (5) */
@@ -191,7 +250,7 @@ Object.keys(FACE_MAP).forEach(k => {
   mesh.position.copy(pos); mesh.lookAt(pos.clone().add(nrm));
   const dir = nrm.clone(); if (k === 'bottom') dir.set(0, -1, 0.18);
   register(id, mesh, dir);
-  addLabelPlane(pos, nrm, 1.5, id);
+  addLabelPlane(pos, nrm, 1.75, id);
 });
 
 /* Caras de la pirámide (4) */
@@ -205,12 +264,13 @@ Object.keys(PYR_MAP).forEach(k => {
   const a = new THREE.Vector3(...pyrDefs[k][0]), b = new THREE.Vector3(...pyrDefs[k][1]);
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute([a.x,a.y,a.z, b.x,b.y,b.z, apex.x,apex.y,apex.z], 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute([0,0, 1,0, .5,1], 2));
   geo.computeVertexNormals();
   const mesh = new THREE.Mesh(geo, makeMat('piramide'));
   const centroid = a.clone().add(b).add(apex).divideScalar(3);
   const nrm = new THREE.Vector3().crossVectors(b.clone().sub(a), apex.clone().sub(a)).normalize();
   register(id, mesh, nrm.clone().add(new THREE.Vector3(0, 0.15, 0)));
-  addLabelPlane(centroid.clone().addScaledVector(nrm, 0.0).add(new THREE.Vector3(0, -0.12, 0)), nrm, 0.95, id);
+  addLabelPlane(centroid.clone().addScaledVector(nrm, 0.0).add(new THREE.Vector3(0, -0.16, 0)), nrm, 1.25, id);
 });
 // Contorno de la pirámide
 const pyrLines = new THREE.BufferGeometry().setFromPoints([
@@ -218,7 +278,7 @@ const pyrLines = new THREE.BufferGeometry().setFromPoints([
 ].map(p => new THREE.Vector3(...p)).concat(
   [[-1,1,1],[1,1,1],[1,1,-1],[-1,1,-1]].flatMap(p => [new THREE.Vector3(...p), apex])
 ));
-piedra.add(new THREE.LineSegments(pyrLines, new THREE.LineBasicMaterial({ color: 0xE5DFC8, transparent: true, opacity: 0.55 })));
+piedra.add(new THREE.LineSegments(pyrLines, new THREE.LineBasicMaterial({ color: 0x4A3A22, transparent: true, opacity: 0.55 })));
 
 /* Aristas del cubo (12) */
 EDGE_LIST.forEach(([p, q, id]) => {
@@ -230,15 +290,15 @@ EDGE_LIST.forEach(([p, q, id]) => {
   mesh.position.copy(mid);
   mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
   register(id, mesh, mid.clone());
-  const sp = badgeSprite(TOPICS[id].n);
-  sp.position.copy(mid).add(mid.clone().normalize().multiplyScalar(0.28));
-  sp.scale.set(0.42, 0.42, 1);
+  const sp = badgeSprite(TOPICS[id].n, TOPICS[id].short);
+  sp.position.copy(mid).add(mid.clone().normalize().multiplyScalar(0.5));
+  sp.scale.set(1.5, 0.375, 1);
   piedra.add(sp);
 });
 // Esferas en los vértices del cubo (remate de sillar)
 [-1, 1].forEach(x => [-1, 1].forEach(y => [-1, 1].forEach(z => {
   const s = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12),
-    new THREE.MeshStandardMaterial({ color: 0xB5AC9C, roughness: 0.9 }));
+    new THREE.MeshStandardMaterial({ color: 0x8C6A3A, roughness: 0.5, metalness: 0.35 }));
   s.position.set(x, y, z); piedra.add(s);
 })));
 
@@ -248,8 +308,8 @@ function paint(id) {
   const it = items[id]; if (!it) return;
   const g = GROUPS[it.grp];
   const m = it.mesh.material;
-  if (id === selectedId) { m.color.setHex(SELECT_COLOR); m.emissive.setHex(0x3a3626); }
-  else if (id === hoveredId) { m.color.setHex(g.hover); m.emissive.setHex(0x1a1a1a); }
+  if (id === selectedId) { m.color.setHex(SELECT_COLOR); m.emissive.setHex(0x4a3d18); }
+  else if (id === hoveredId) { m.color.setHex(g.hover); m.emissive.setHex(0x2a2416); }
   else { m.color.setHex(g.color); m.emissive.setHex(0x000000); }
 }
 
@@ -346,6 +406,12 @@ window.addEventListener('pointerup', ev => {
     if (id) select(id, 'scroll');
   }
 });
+
+/* ═══ Tipografías: redibujar rótulos al cargar ═══ */
+if (document.fonts && document.fonts.load) {
+  Promise.all(['400 100px "Cinzel"', '600 40px "Cinzel"', '400 40px "Cormorant Garamond"'].map(f => document.fonts.load(f)))
+    .then(() => relabel.forEach(fn => fn())).catch(() => {});
+}
 
 /* ═══ Render ═══ */
 function resize() {
