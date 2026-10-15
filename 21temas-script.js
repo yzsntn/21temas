@@ -178,14 +178,14 @@ function init3D() {
   controls.enablePan = false; controls.autoRotateSpeed = 0.7;
   controls.autoRotate = !userPaused;
 
-  scene.add(new THREE.AmbientLight(0xfff0d8, 0.62));
-  const key = new THREE.DirectionalLight(0xffe2b0, 1.0); key.position.set(5, 9, 6); scene.add(key);
+  scene.add(new THREE.AmbientLight(0xfff0d8, 0.5));
+  const key = new THREE.DirectionalLight(0xffe2b0, 0.9); key.position.set(5, 9, 6); scene.add(key);
   const rim = new THREE.DirectionalLight(0x8fa6d6, 0.55); rim.position.set(-7, 3, -6); scene.add(rim);
   const under = new THREE.DirectionalLight(0xc6a56a, 0.35); under.position.set(0, -6, 2); scene.add(under);
 
-  /* — Piedra real: arenisca, granito y pizarra generadas por código — */
+  /* — Una sola piedra: caliza de grano fino, hueso cálido — */
   /*STONEGEN-START*/
-  function genStoneSet(kind, seed, opts) {
+  function genStoneSet(seed, opts) {
     opts = opts || {};
     const S = 512, N = S * S;
     const smooth = t => t * t * (3 - 2 * t);
@@ -218,32 +218,13 @@ function init3D() {
       for (let x = 0; x < S; x++) {
         const u = x / S, v = y / S, i = y * S + x;
         const low = fbm(u, v, 3, 3, 3, 1), mid = fbm(u, v, 9, 9, 3, 2), g = hash(x, y, 99);
-        let h, r, gg, b, rough;
-        if (kind === 'sandstone') {
-          const strata = fbm(u, v, 2, 11, 3, 3), pit = fbm(u, v, 38, 38, 2, 4);
-          h = 0.55 * mid + 0.3 * strata + 0.12 * low + 0.06 * g - (pit > 0.8 ? (pit - 0.8) * 2 : 0);
-          const m = 0.88 + (strata - 0.5) * 0.24 + (low - 0.5) * 0.16 + (g - 0.5) * 0.08;
-          r = m + 0.035; gg = m + 0.005; b = m - 0.055;
-          if (pit > 0.8) { const k = 1 - (pit - 0.8) * 1.5; r *= k; gg *= k; b *= k; }
-          rough = 0.93 + (g - 0.5) * 0.08;
-        } else if (kind === 'granite') {
-          const clump = fbm(u, v, 110, 110, 1, 5), feld = fbm(u, v, 14, 14, 2, 6);
-          h = 0.3 * low + 0.18 * mid + 0.04 * g;
-          const m = 0.8 + (low - 0.5) * 0.14 + (mid - 0.5) * 0.12 + (g - 0.5) * 0.08;
-          r = m; gg = m; b = m;
-          if (feld > 0.56) { const k = Math.min(1, (feld - 0.56) * 4); r += 0.05 * k; gg -= 0.025 * k; b -= 0.02 * k; }
-          if (clump > 0.72 && g < 0.5) { r *= 0.46; gg *= 0.46; b *= 0.48; rough = 0.62; h -= 0.03; }
-          else if (clump < 0.26 && g > 0.4) { r *= 1.14; gg *= 1.14; b *= 1.14; rough = 0.7; }
-          else rough = 0.82 + (g - 0.5) * 0.1;
-          if (hash(x, y, 77) < 0.006) { r *= 0.4; gg *= 0.4; b *= 0.4; }
-        } else {
-          const fol = fbm(u, v, 2, 12, 3, 7), step = Math.floor(low * 5) / 5;
-          h = 0.5 * (0.5 * step + 0.5 * low) + 0.2 * fol + 0.14 * mid + 0.06 * g;
-          const m = 0.84 + (fol - 0.5) * 0.12 + (mid - 0.5) * 0.14 + (low - 0.5) * 0.08 + (g - 0.5) * 0.06;
-          r = m - 0.015; gg = m + 0.01; b = m - 0.005;
-          rough = 0.8 + (fol - 0.5) * 0.18;
-        }
-        H[i] = h; A[i * 3] = r; A[i * 3 + 1] = gg; A[i * 3 + 2] = b; R[i] = rough;
+        const bed = fbm(u, v, 2, 9, 3, 8), mott = fbm(u, v, 6, 6, 4, 9), pit = fbm(u, v, 46, 46, 2, 4), ox = fbm(u, v, 4, 4, 3, 10);
+        const h = 0.5 * mid + 0.2 * bed + 0.14 * low + 0.09 * mott + 0.07 * g - (pit > 0.82 ? (pit - 0.82) * 1.8 : 0);
+        const m = 0.9 + (bed - 0.5) * 0.12 + (mott - 0.5) * 0.14 + (g - 0.5) * 0.07;
+        let r = m + 0.012, gg = m, b = m - 0.03;
+        if (ox > 0.64) { const k = Math.min(1, (ox - 0.64) * 3.5); r -= 0.02 * k; gg -= 0.05 * k; b -= 0.1 * k; }   // velos de óxido
+        if (pit > 0.82) { const k = 1 - (pit - 0.82) * 0.9; r *= k; gg *= k; b *= k; }
+        H[i] = h; A[i * 3] = r; A[i * 3 + 1] = gg; A[i * 3 + 2] = b; R[i] = 0.88 + (g - 0.5) * 0.08;
       }
     }
 
@@ -260,26 +241,22 @@ function init3D() {
         }
       }
     }
-    // grietas finas
-    const nCr = kind === 'granite' ? 1 : 3;
-    for (let c = 0; c < nCr; c++) {
+    for (let c = 0; c < 2; c++) {                  // dos fisuras apenas visibles
       let x = rnd() * S, y = rnd() * S, a = rnd() * 6.283;
-      const segs = 18 + ((rnd() * 14) | 0);
+      const segs = 14 + ((rnd() * 10) | 0);
       for (let s = 0; s < segs; s++) {
         a += (rnd() - 0.5) * 0.9;
-        const nx = x + Math.cos(a) * (7 + rnd() * 9), ny = y + Math.sin(a) * (7 + rnd() * 9);
-        stroke(x, y, nx, ny, 1, 0.13, 0.3); x = nx; y = ny;
+        const nx = x + Math.cos(a) * (6 + rnd() * 8), ny = y + Math.sin(a) * (6 + rnd() * 8);
+        stroke(x, y, nx, ny, 1, 0.1, 0.22); x = nx; y = ny;
       }
     }
-    // huellas de cincel
-    if (opts.tool) {
-      for (let c = 0; c < 120; c++) {
+    if (opts.tool) {                               // huellas de cincel
+      for (let c = 0; c < 110; c++) {
         const x = rnd() * S, y = rnd() * S, L = 36 + rnd() * 70, a2 = 0.62 + (rnd() - 0.5) * 0.12;
         stroke(x, y, x + Math.cos(a2) * L, y + Math.sin(a2) * L, 1, 0.05, 0.06);
       }
     }
-    // sillar: margen labrado con ranura, centro más rústico
-    if (opts.margin) {
+    if (opts.margin) {                             // sillar: margen labrado con ranura fina
       const m = 30;
       for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
         const d = Math.min(x, y, S - 1 - x, S - 1 - y);
@@ -288,12 +265,12 @@ function init3D() {
         H[i] = H[i] * (1 - blend) + 0.45 * blend;
         const gr = Math.exp(-Math.pow((d - m) / 2.4, 2));
         H[i] -= 0.45 * gr + 0.25 * (1 - smooth(Math.min(1, d / 8)));
-        const f = (1 - 0.28 * gr) * (0.78 + 0.22 * smooth(Math.min(1, d / 14)));
+        const f = (1 - 0.26 * gr) * (0.8 + 0.2 * smooth(Math.min(1, d / 14)));
         A[i * 3] *= f; A[i * 3 + 1] *= f; A[i * 3 + 2] *= f;
       }
     }
 
-    const str = kind === 'sandstone' ? 12 : kind === 'granite' ? 6 : 9;
+    const str = 8;
     function mk(fill) {
       const c = document.createElement('canvas'); c.width = c.height = S;
       const ctx = c.getContext('2d'), id = ctx.createImageData(S, S);
@@ -321,21 +298,22 @@ function init3D() {
   /*STONEGEN-END*/
 
   const STONE = {
-    piramide: { kind: 'sandstone', seed: 1201, repeat: [1, 1],   opts: { tool: true } },                 // arenisca
-    arista:   { kind: 'granite',   seed: 2203, repeat: [0.6, 2], opts: {} },                             // granito
-    cara:     { kind: 'slate',     seed: 3307, repeat: [1, 1],   opts: { margin: true, tool: true } }     // pizarra
+    piramide: { seed: 1201, repeat: [1, 1],      opts: { tool: true } },
+    arista:   { seed: 1201, repeat: [0.15, 2.1], opts: {} },
+    cara:     { seed: 1201, repeat: [1, 1],      opts: { margin: true, tool: true } }
   };
+  const STONE_COLOR = 0xD2CAB4;
   const matsByGroup = { piramide: [], arista: [], cara: [] };
   function makeMat(grp) {
     const m = new THREE.MeshStandardMaterial({
-      color: GROUPS[grp].color, roughness: 1, metalness: 0.03,
+      color: STONE_COLOR, roughness: 1, metalness: 0,
       side: THREE.DoubleSide, emissive: 0x000000
     });
     matsByGroup[grp].push(m);
     return m;
   }
   function applyStone(grp) {
-    const cfg = STONE[grp], set = genStoneSet(cfg.kind, cfg.seed, cfg.opts);
+    const cfg = STONE[grp], set = genStoneSet(cfg.seed, cfg.opts);
     const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1);
     const tex = cv => {
       const t = new THREE.CanvasTexture(cv);
@@ -357,49 +335,45 @@ function init3D() {
     });
     lines.push(line); return lines;
   }
-  function faceTexture(num, short, pyr) {
+  function roman(n) {
+    n = parseInt(n, 10); let s = '';
+    [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']].forEach(p => { while (n >= p[0]) { s += p[1]; n -= p[0]; } });
+    return s;
+  }
+  function faceTexture(num, pyr) {
     const c = document.createElement('canvas'); c.width = c.height = 512;
-    const ctx = c.getContext('2d'); ctx.textAlign = 'center';
-    const nY = pyr ? 176 : 214, tY = pyr ? 248 : 292, maxW = pyr ? 400 : 330;
-    const draw = (dx, dy, col) => {
-      ctx.fillStyle = col; ctx.font = '400 132px ' + SERIF; ctx.fillText(String(num), 256 + dx, nY + dy);
-      ctx.font = '700 44px ' + SERIF;
-      wrapText(ctx, short.toUpperCase(), maxW).slice(0, 3).forEach((l, i) => ctx.fillText(l, 256 + dx, tY + dy + i * 50));
-    };
-    draw(2, 2, 'rgba(255,250,236,.5)');   // relieve claro
-    draw(0, 0, 'rgba(30,24,16,.92)');     // grabado en tinta
+    const ctx = c.getContext('2d'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const txt = roman(num), maxW = pyr ? 330 : 400;
+    let size = pyr ? 160 : 210; ctx.font = '500 ' + size + 'px ' + SERIF;
+    while (ctx.measureText(txt).width > maxW && size > 60) { size -= 4; ctx.font = '500 ' + size + 'px ' + SERIF; }
+    const y = pyr ? 272 : 256;
+    ctx.fillStyle = 'rgba(255,250,236,.55)'; ctx.fillText(txt, 258, y + 2);   // filo de luz
+    ctx.fillStyle = 'rgba(52,40,24,.9)'; ctx.fillText(txt, 256, y);            // cincelado
     const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
   }
   function addFaceLabel(pos, normal, size, id, pyr, parent) {
     const tp = TOPICS[id];
-    const mat = new THREE.MeshBasicMaterial({ map: faceTexture(tp.n, tp.short, pyr), transparent: true, depthWrite: false });
-    relabels.push(() => { mat.map.dispose(); mat.map = faceTexture(tp.n, tp.short, pyr); mat.needsUpdate = true; });
+    const mat = new THREE.MeshBasicMaterial({ map: faceTexture(tp.n, pyr), transparent: true, depthWrite: false });
+    relabels.push(() => { mat.map.dispose(); mat.map = faceTexture(tp.n, pyr); mat.needsUpdate = true; });
     const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
     m.position.copy(pos).addScaledVector(normal, 0.02);
     m.lookAt(pos.clone().add(normal));
     parent.add(m);
   }
-  function plateTexture(num, short) {
-    const Wc = 1024, Hc = 256, c = document.createElement('canvas'); c.width = Wc; c.height = Hc;
-    const ctx = c.getContext('2d');
-    const r = 18, x0 = 8, y0 = 8, w = Wc - 16, h = Hc - 16;
-    ctx.beginPath();
-    ctx.moveTo(x0 + r, y0); ctx.arcTo(x0 + w, y0, x0 + w, y0 + h, r); ctx.arcTo(x0 + w, y0 + h, x0, y0 + h, r);
-    ctx.arcTo(x0, y0 + h, x0, y0, r); ctx.arcTo(x0, y0, x0 + w, y0, r); ctx.closePath();
-    ctx.fillStyle = 'rgba(14,15,19,.95)'; ctx.fill();
-    ctx.lineWidth = 6; ctx.strokeStyle = '#C6A56A'; ctx.stroke();
-    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(198,165,106,.4)'; ctx.strokeRect(x0 + 14, y0 + 14, w - 28, h - 28);
-    ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-    ctx.fillStyle = '#D9BA78'; ctx.font = '500 118px ' + SERIF; ctx.fillText(String(num), 140, 134);
-    ctx.fillStyle = 'rgba(198,165,106,.55)'; ctx.fillRect(250, 56, 2, 144);
-    let size = 82; ctx.font = '600 ' + size + 'px ' + SERIF;
-    while (ctx.measureText(short).width > 690 && size > 34) { size -= 2; ctx.font = '600 ' + size + 'px ' + SERIF; }
-    ctx.fillStyle = '#EFE8D6'; ctx.fillText(short, 640, 134);
+  function medallionTexture(num) {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const ctx = c.getContext('2d'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.beginPath(); ctx.arc(128, 128, 118, 0, Math.PI * 2); ctx.fillStyle = 'rgba(14,15,19,.96)'; ctx.fill();
+    ctx.lineWidth = 9; ctx.strokeStyle = '#C6A56A'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(128, 128, 98, 0, Math.PI * 2); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(198,165,106,.45)'; ctx.stroke();
+    const txt = roman(num); let size = 104; ctx.font = '600 ' + size + 'px ' + SERIF;
+    while (ctx.measureText(txt).width > 150 && size > 40) { size -= 4; ctx.font = '600 ' + size + 'px ' + SERIF; }
+    ctx.fillStyle = '#E2C98F'; ctx.fillText(txt, 128, 132);
     const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
   }
-  function plateSprite(num, short) {
-    const mat = new THREE.SpriteMaterial({ map: plateTexture(num, short), transparent: true });
-    relabels.push(() => { mat.map.dispose(); mat.map = plateTexture(num, short); mat.needsUpdate = true; });
+  function medallionSprite(num) {
+    const mat = new THREE.SpriteMaterial({ map: medallionTexture(num), transparent: true });
+    relabels.push(() => { mat.map.dispose(); mat.map = medallionTexture(num); mat.needsUpdate = true; });
     return new THREE.Sprite(mat);
   }
 
@@ -423,22 +397,39 @@ function init3D() {
   ];
   const PYR_Y0 = 1, APEX_Y = 2.6;
 
-  // 5 caras del cubo
+  const PB = 0.93;                         // la pirámide asienta un poco hacia dentro del cubo
+  const GOLD = 0xC6A56A;
+  const goldMat = new THREE.MeshStandardMaterial({ color: 0xC9A869, roughness: 0.38, metalness: 0.5, emissive: 0x2a2008 });
+  function addGlow(id, mesh) {
+    const g = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),
+      new THREE.LineBasicMaterial({ color: 0xF0D28A, transparent: true, opacity: 0.9, depthTest: false, depthWrite: false }));
+    g.position.copy(mesh.position); g.quaternion.copy(mesh.quaternion); g.renderOrder = 6; g.visible = false;
+    piedra.add(g); items[id].glow = g;
+  }
+
+  // 5 caras del cubo: panel hundido con filete dorado
   const faceN = { bottom: V3(0, -1, 0), front: V3(0, 0, 1), right: V3(1, 0, 0), back: V3(0, 0, -1), left: V3(-1, 0, 0) };
+  const frameGeo = new THREE.BufferGeometry().setFromPoints([V3(-0.883, -0.883, 0), V3(0.883, -0.883, 0), V3(0.883, 0.883, 0), V3(-0.883, 0.883, 0)]);
+  const frameMat = new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.6 });
   Object.keys(FACE_MAP).forEach(k => {
     const id = FACE_MAP[k], nrm = faceN[k], pos = nrm.clone();
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), makeMat('cara'));
     mesh.position.copy(pos); mesh.lookAt(pos.clone().add(nrm));
     piedra.add(mesh);
-    register(id, mesh, k === 'bottom' ? V3(0, -1, 0.2) : nrm);
+    const dir = k === 'bottom' ? V3(0, -1, 0.2) : nrm;
+    register(id, mesh, dir);
+    items[id].anchor = pos.clone().add(dir.clone().normalize().multiplyScalar(0.5));
+    addGlow(id, mesh);
+    const fr = new THREE.LineLoop(frameGeo, frameMat);
+    fr.position.copy(pos).addScaledVector(nrm, 0.012); fr.quaternion.copy(mesh.quaternion); piedra.add(fr);
     addFaceLabel(pos, nrm, 1.75, id, false, piedra);
   });
 
   // 4 caras de la pirámide
   const apex = V3(0, APEX_Y, 0);
   const pyrDefs = {
-    front: [[-1, PYR_Y0, 1], [1, PYR_Y0, 1]], right: [[1, PYR_Y0, 1], [1, PYR_Y0, -1]],
-    back: [[1, PYR_Y0, -1], [-1, PYR_Y0, -1]], left: [[-1, PYR_Y0, -1], [-1, PYR_Y0, 1]]
+    front: [[-PB, PYR_Y0, PB], [PB, PYR_Y0, PB]], right: [[PB, PYR_Y0, PB], [PB, PYR_Y0, -PB]],
+    back: [[PB, PYR_Y0, -PB], [-PB, PYR_Y0, -PB]], left: [[-PB, PYR_Y0, -PB], [-PB, PYR_Y0, PB]]
   };
   Object.keys(PYR_MAP).forEach(k => {
     const id = PYR_MAP[k];
@@ -453,39 +444,82 @@ function init3D() {
     register(id, mesh, nrm.clone().add(V3(0, 0.15, 0)));
     const mid = a.clone().add(b).multiplyScalar(0.5);
     const p = mid.clone().add(apex.clone().sub(mid).multiplyScalar((1.58 - PYR_Y0) / (APEX_Y - PYR_Y0)));
+    items[id].anchor = p.clone().addScaledVector(nrm, 0.45);
+    addGlow(id, mesh);
     addFaceLabel(p, nrm, 1.25, id, true, piedra);
   });
-  const pyrPts = [[-1, PYR_Y0, 1], [1, PYR_Y0, 1], [1, PYR_Y0, 1], [1, PYR_Y0, -1], [1, PYR_Y0, -1], [-1, PYR_Y0, -1], [-1, PYR_Y0, -1], [-1, PYR_Y0, 1]]
+  const pyrPts = [[-PB, PYR_Y0, PB], [PB, PYR_Y0, PB], [PB, PYR_Y0, PB], [PB, PYR_Y0, -PB], [PB, PYR_Y0, -PB], [-PB, PYR_Y0, -PB], [-PB, PYR_Y0, -PB], [-PB, PYR_Y0, PB]]
     .map(p => V3(...p))
-    .concat([[-1, PYR_Y0, 1], [1, PYR_Y0, 1], [1, PYR_Y0, -1], [-1, PYR_Y0, -1]].flatMap(p => [V3(...p), apex]));
+    .concat([[-PB, PYR_Y0, PB], [PB, PYR_Y0, PB], [PB, PYR_Y0, -PB], [-PB, PYR_Y0, -PB]].flatMap(p => [V3(...p), apex]));
   piedra.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pyrPts),
-    new THREE.LineBasicMaterial({ color: 0x2a2214, transparent: true, opacity: 0.6 })));
+    new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.75 })));
 
-  // 12 aristas con su placa
+  // 12 aristas achaflanadas, con nervio dorado, gema y medallón numerado
   EDGE_LIST.forEach(pair => {
     const a = V3(...pair[0]), b = V3(...pair[1]), id = pair[2];
-    const mid = a.clone().add(b).multiplyScalar(0.5);
+    const mid = a.clone().add(b).multiplyScalar(0.5), dirE = b.clone().sub(a).normalize();
     const len = a.distanceTo(b);
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, len + 0.1, 20), makeMat('arista'));
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.15, len + 0.1, 0.15), makeMat('arista'));
     mesh.position.copy(mid);
-    mesh.quaternion.setFromUnitVectors(V3(0, 1, 0), b.clone().sub(a).normalize());
+    mesh.quaternion.setFromUnitVectors(V3(0, 1, 0), dirE);
+    mesh.rotateY(Math.PI / 4);                                   // la faceta plana mira hacia fuera
     piedra.add(mesh);
     register(id, mesh, mid.clone());
-    const sp = plateSprite(TOPICS[id].n, TOPICS[id].short);
-    const horiz = V3(mid.x, 0, mid.z);
+    const out = mid.clone().sub(dirE.clone().multiplyScalar(mid.dot(dirE))).normalize();
+    const lo = out.applyQuaternion(mesh.quaternion.clone().invert());
+    const ax = Math.abs(lo.x) > Math.abs(lo.z) ? V3(Math.sign(lo.x), 0, 0) : V3(0, 0, Math.sign(lo.z));
+    const rib = new THREE.Mesh(new THREE.BoxGeometry(ax.x ? 0.02 : 0.045, len * 0.88, ax.z ? 0.02 : 0.045), goldMat);
+    rib.position.copy(ax).multiplyScalar(0.0755); mesh.add(rib);
+    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.085), goldMat);
+    gem.scale.set(0.75, 1.6, 0.75); gem.position.copy(ax).multiplyScalar(0.085); mesh.add(gem);
+    const sp = medallionSprite(TOPICS[id].n);
+    const horiz = V3(mid.x, 0, mid.z).normalize();
     const vertical = Math.abs(mid.x) > 0.5 && Math.abs(mid.z) > 0.5;       // pilares: salen por la diagonal
-    sp.position.copy(mid).addScaledVector(horiz.normalize(), vertical ? 0.58 : 0.48);
-    sp.scale.set(1.8, 0.45, 1);
+    sp.position.copy(mid).addScaledVector(horiz, vertical ? 0.36 : 0.3);
+    sp.scale.set(0.5, 0.5, 1);
     sp.renderOrder = 3;
     piedra.add(sp);
-    register(id, sp, mid.clone());      // la placa también abre el tema
-    items[id].mesh = mesh;              // …pero el color vive en la arista
+    register(id, sp, mid.clone());      // el medallón también abre el tema
+    items[id].mesh = mesh;              // …pero el estado vive en la arista
+    items[id].anchor = mid.clone().addScaledVector(horiz, 0.85);
+    addGlow(id, mesh);
   });
   [-1, 1].forEach(x => [-1, 1].forEach(y => [-1, 1].forEach(z => {
-    const s = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12),
-      new THREE.MeshStandardMaterial({ color: 0xB99A5C, roughness: 0.45, metalness: 0.45 }));
+    const s = new THREE.Mesh(new THREE.SphereGeometry(0.1, 14, 14), goldMat);
     s.position.set(x, y, z); piedra.add(s);
   })));
+
+  /* — Rótulo del tema: aparece al señalar o elegir una pieza — */
+  const tagCv = document.createElement('canvas'); tagCv.width = 1024; tagCv.height = 192;
+  const tagTex = new THREE.CanvasTexture(tagCv);
+  const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tagTex, transparent: true, depthTest: false, depthWrite: false }));
+  tag.renderOrder = 10; tag.visible = false; scene.add(tag);
+  const tagAnchor = V3(0, 0, 0); let tagId = null;
+  function drawTag(id) {
+    const ctx = tagCv.getContext('2d'), tp = TOPICS[id];
+    ctx.clearRect(0, 0, 1024, 192);
+    const x0 = 6, y0 = 6, w = 1012, h = 180, r = 16;
+    ctx.beginPath(); ctx.moveTo(x0 + r, y0); ctx.arcTo(x0 + w, y0, x0 + w, y0 + h, r); ctx.arcTo(x0 + w, y0 + h, x0, y0 + h, r);
+    ctx.arcTo(x0, y0 + h, x0, y0, r); ctx.arcTo(x0, y0, x0 + w, y0, r); ctx.closePath();
+    ctx.fillStyle = 'rgba(14,15,19,.94)'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = '#C6A56A'; ctx.stroke();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(198,165,106,.4)'; ctx.strokeRect(x0 + 12, y0 + 12, w - 24, h - 24);
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    const num = roman(tp.n); let ns = 96; ctx.font = '500 ' + ns + 'px ' + SERIF;
+    while (ctx.measureText(num).width > 190 && ns > 40) { ns -= 4; ctx.font = '500 ' + ns + 'px ' + SERIF; }
+    ctx.fillStyle = '#E2C98F'; ctx.fillText(num, 140, 102);
+    ctx.fillStyle = 'rgba(198,165,106,.55)'; ctx.fillRect(250, 44, 2, 104);
+    let size = 76; ctx.font = '600 ' + size + 'px ' + SERIF;
+    while (ctx.measureText(tp.short).width > 700 && size > 30) { size -= 2; ctx.font = '600 ' + size + 'px ' + SERIF; }
+    ctx.fillStyle = '#EFE8D6'; ctx.fillText(tp.short, 636, 102);
+    tagTex.needsUpdate = true;
+  }
+  relabels.push(() => { if (tagId) drawTag(tagId); });
+  function updateTag() {
+    const id = hoveredId || selectedId;
+    if (!id || !items[id]) { tag.visible = false; tagId = null; return; }
+    if (id !== tagId) { tagId = id; drawTag(id); }
+    tagAnchor.copy(items[id].anchor); tag.visible = true;
+  }
 
   /* — Suelo: sombra, círculos y cuadrados — */
   const FLOOR_Y = -1.14;
@@ -509,14 +543,16 @@ function init3D() {
     const pts = []; for (let i = 0; i < 4; i++) { const a = rot + (i / 4) * Math.PI * 2; pts.push(V3(Math.cos(a) * r, 0, Math.sin(a) * r)); }
     return new THREE.LineLoop(loopPts(pts), lineMat(op));
   }
-  floor.add(circle(2.5, 0.5), circle(3.35, 0.3), circle(3.48, 0.16));
-  floor.add(square(2.5, Math.PI / 4, 0.26), square(2.5, 0, 0.26));
+  const R0 = Math.SQRT2;                       // el círculo que abraza la base del cubo
+  floor.add(square(R0, Math.PI / 4, 0.55), circle(R0, 0.4));      // huella del cubo
+  floor.add(square(2, 0, 0.3), circle(2, 0.5));                   // rombo inscrito en el círculo mayor
+  floor.add(circle(2.8, 0.3), circle(2.92, 0.16));
   const tk = [];
   for (let i = 0; i < 96; i++) {
-    const a = (i / 96) * Math.PI * 2, r1 = 3.35, r2 = i % 8 === 0 ? 3.7 : 3.48;
+    const a = (i / 96) * Math.PI * 2, r1 = 2.8, r2 = i % 8 === 0 ? 3.15 : 2.92;
     tk.push(V3(Math.cos(a) * r1, 0, Math.sin(a) * r1), V3(Math.cos(a) * r2, 0, Math.sin(a) * r2));
   }
-  floor.add(new THREE.LineSegments(loopPts(tk), lineMat(0.3)));
+  const tickRing = new THREE.LineSegments(loopPts(tk), lineMat(0.3)); floor.add(tickRing);
 
   /* — Polvo flotante — */
   const N = 150, pPos = new Float32Array(N * 3), pSeed = new Float32Array(N);
@@ -539,16 +575,15 @@ function init3D() {
 
   /* — Color según estado — */
   const tmp = new THREE.Color();
+  const STONE_COL = new THREE.Color(STONE_COLOR);
   function paint(id) {
     const it = items[id]; if (!it) return;
-    const g = GROUPS[it.grp], m = it.mesh.material;
-    let em = 0x000000;
-    if (id === selectedId) { tmp.setHex(SELECT_COLOR); em = 0x4a3c16; }
-    else if (id === hoveredId) { tmp.setHex(g.hover); em = 0x211b0e; }
-    else { tmp.setHex(g.color); if (selectedId) tmp.multiplyScalar(0.66); }
-    m.color.copy(tmp); m.emissive.setHex(em);
+    const m = it.mesh.material, on = id === selectedId, hv = id === hoveredId;
+    tmp.copy(STONE_COL); if (selectedId && !on) tmp.multiplyScalar(0.6);
+    m.color.copy(tmp); m.emissive.setHex(on ? 0x4a3a14 : hv ? 0x2c2412 : 0x000000);
+    if (it.glow) { it.glow.visible = on || hv; it.glow.material.opacity = on ? 0.95 : 0.55; }
   }
-  function paintAll() { ORDER.forEach(paint); }
+  function paintAll() { ORDER.forEach(paint); updateTag(); }
 
   /* — Cámara — */
   let focusDir = null, focusDist = 0, shiftX = 0, shiftY = 0, hasOffset = false;
@@ -602,7 +637,7 @@ function init3D() {
     const k = reduce ? 1 : Math.min(1, 4.2 * dt);
     if (!reduce) {
       piedra.position.y = Math.sin(t * 0.7) * 0.05;
-      floor.rotation.y = -t * 0.035;
+      tickRing.rotation.y = -t * 0.035;
       for (let i = 0; i < N; i++) {
         let y = pPos[i * 3 + 1] + dt * 0.07 * pSeed[i];
         if (y > 5.5) y = -1;
@@ -624,6 +659,10 @@ function init3D() {
       shiftX = shiftY = 0;
       if (hasOffset) { camera.clearViewOffset(); hasOffset = false; }
     } else { camera.setViewOffset(W, H, shiftX, shiftY, W, H); hasOffset = true; }
+    if (tag.visible) {
+      const s = 2.3 * camera.position.distanceTo(TARGET) / baseDist;
+      tag.scale.set(s, s * 0.1875, 1); tag.position.copy(tagAnchor).add(piedra.position);
+    }
     controls.update();
     renderer.render(scene, camera);
   })();
