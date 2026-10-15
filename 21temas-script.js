@@ -1,4 +1,3 @@
-
 (function () {
 'use strict';
 
@@ -107,6 +106,11 @@ function hover(id) {
   if (s3) s3.repaint();
 }
 
+function roman(n) {
+  n = parseInt(n, 10); let s = '';
+  [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']].forEach(p => { while (n >= p[0]) { s += p[1]; n -= p[0]; } });
+  return s;
+}
 function select(id, from) {
   if (from === 'rail' || from === 'pager') { hoverLockUntil = performance.now() + 800; if (hoveredId) hover(null); }
   selectedId = id;
@@ -122,7 +126,7 @@ function select(id, from) {
     sheetBody.innerHTML =
       '<div class="sh-top"><span class="kind" style="--g:' + g.css + '">' + g.kind + ' · ' + g.theme + '</span>' +
       '<button class="btn close" type="button" data-act="close" aria-label="Cerrar el detalle">Cerrar</button></div>' +
-      '<div class="num" aria-hidden="true">' + t.n + '</div>' +
+      '<div class="num" aria-hidden="true">' + roman(t.n) + '</div>' +
       '<h2 class="sh-title" id="shTitle" tabindex="-1">' + t.title + '</h2>' +
       '<section class="sec"><h3>Síntesis</h3><p>' + t.sint + '</p></section>' +
       '<section class="sec"><h3>Complemento</h3><p>' + t.comp + '</p></section>' +
@@ -167,7 +171,7 @@ function init3D() {
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 120);
-  const TARGET = new THREE.Vector3(0, 0.75, 0);
+  const TARGET = new THREE.Vector3(0, 0.6, 0);
   const HOME_DIR = new THREE.Vector3(0.62, 0.36, 0.7).normalize();
   const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
   let baseDist = 11, touched = false, W = 1, H = 1;
@@ -178,10 +182,10 @@ function init3D() {
   controls.enablePan = false; controls.autoRotateSpeed = 0.7;
   controls.autoRotate = !userPaused;
 
-  scene.add(new THREE.AmbientLight(0xfff0d8, 0.5));
-  const key = new THREE.DirectionalLight(0xffe2b0, 0.9); key.position.set(5, 9, 6); scene.add(key);
+  scene.add(new THREE.AmbientLight(0xf3f1ec, 0.38));
+  const key = new THREE.DirectionalLight(0xfff6ea, 1.05); key.position.set(5, 9, 6); scene.add(key);
   const rim = new THREE.DirectionalLight(0x8fa6d6, 0.55); rim.position.set(-7, 3, -6); scene.add(rim);
-  const under = new THREE.DirectionalLight(0xc6a56a, 0.35); under.position.set(0, -6, 2); scene.add(under);
+  const under = new THREE.DirectionalLight(0xc6a56a, 0.1); under.position.set(0, -6, 2); scene.add(under);
 
   /* — Una sola piedra: caliza de grano fino, hueso cálido — */
   /*STONEGEN-START*/
@@ -221,7 +225,7 @@ function init3D() {
         const bed = fbm(u, v, 2, 9, 3, 8), mott = fbm(u, v, 6, 6, 4, 9), pit = fbm(u, v, 46, 46, 2, 4), ox = fbm(u, v, 4, 4, 3, 10);
         const h = 0.5 * mid + 0.2 * bed + 0.14 * low + 0.09 * mott + 0.07 * g - (pit > 0.82 ? (pit - 0.82) * 1.8 : 0);
         const m = 0.9 + (bed - 0.5) * 0.12 + (mott - 0.5) * 0.14 + (g - 0.5) * 0.07;
-        let r = m + 0.012, gg = m, b = m - 0.03;
+        let r = m + 0.004, gg = m, b = m - 0.012;
         if (ox > 0.64) { const k = Math.min(1, (ox - 0.64) * 3.5); r -= 0.02 * k; gg -= 0.05 * k; b -= 0.1 * k; }   // velos de óxido
         if (pit > 0.82) { const k = 1 - (pit - 0.82) * 0.9; r *= k; gg *= k; b *= k; }
         H[i] = h; A[i * 3] = r; A[i * 3 + 1] = gg; A[i * 3 + 2] = b; R[i] = 0.88 + (g - 0.5) * 0.08;
@@ -260,7 +264,7 @@ function init3D() {
       const m = 30;
       for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
         const d = Math.min(x, y, S - 1 - x, S - 1 - y);
-        if (d > m + 10) continue;
+        if (d > m + 10) { const i0 = y * S + x; A[i0 * 3] *= 1.07; A[i0 * 3 + 1] *= 1.07; A[i0 * 3 + 2] *= 1.07; continue; }
         const i = y * S + x, t = Math.min(1, d / m), blend = 0.65 * (1 - t);
         H[i] = H[i] * (1 - blend) + 0.45 * blend;
         const gr = Math.exp(-Math.pow((d - m) / 2.4, 2));
@@ -302,7 +306,7 @@ function init3D() {
     arista:   { seed: 1201, repeat: [0.15, 2.1], opts: {} },
     cara:     { seed: 1201, repeat: [1, 1],      opts: { margin: true, tool: true } }
   };
-  const STONE_COLOR = 0xD2CAB4;
+  const STONE_COLOR = 0xC6C5C0;
   const matsByGroup = { piramide: [], arista: [], cara: [] };
   function makeMat(grp) {
     const m = new THREE.MeshStandardMaterial({
@@ -418,7 +422,7 @@ function init3D() {
     piedra.add(mesh);
     const dir = k === 'bottom' ? V3(0, -1, 0.2) : nrm;
     register(id, mesh, dir);
-    items[id].anchor = pos.clone().add(dir.clone().normalize().multiplyScalar(0.5));
+    items[id].anchor = V3(0, APEX_Y + 0.7, 0);
     addGlow(id, mesh);
     const fr = new THREE.LineLoop(frameGeo, frameMat);
     fr.position.copy(pos).addScaledVector(nrm, 0.012); fr.quaternion.copy(mesh.quaternion); piedra.add(fr);
@@ -444,7 +448,7 @@ function init3D() {
     register(id, mesh, nrm.clone().add(V3(0, 0.15, 0)));
     const mid = a.clone().add(b).multiplyScalar(0.5);
     const p = mid.clone().add(apex.clone().sub(mid).multiplyScalar((1.58 - PYR_Y0) / (APEX_Y - PYR_Y0)));
-    items[id].anchor = p.clone().addScaledVector(nrm, 0.45);
+    items[id].anchor = V3(0, APEX_Y + 0.7, 0);
     addGlow(id, mesh);
     addFaceLabel(p, nrm, 1.25, id, true, piedra);
   });
@@ -475,13 +479,16 @@ function init3D() {
     const sp = medallionSprite(TOPICS[id].n);
     const horiz = V3(mid.x, 0, mid.z).normalize();
     const vertical = Math.abs(mid.x) > 0.5 && Math.abs(mid.z) > 0.5;       // pilares: salen por la diagonal
-    sp.position.copy(mid).addScaledVector(horiz, vertical ? 0.36 : 0.3);
-    sp.scale.set(0.5, 0.5, 1);
+    sp.position.copy(mid).addScaledVector(horiz, vertical ? 0.27 : 0.24);
+    sp.scale.set(0.28, 0.28, 1);
+    if (mid.y < 0 && !vertical) { sp.position.y += 0.16; sp.position.addScaledVector(horiz, 0.06); }
+    sp.material.depthTest = false;
     sp.renderOrder = 3;
     piedra.add(sp);
     register(id, sp, mid.clone());      // el medallón también abre el tema
     items[id].mesh = mesh;              // …pero el estado vive en la arista
-    items[id].anchor = mid.clone().addScaledVector(horiz, 0.85);
+    items[id].anchor = V3(0, APEX_Y + 0.7, 0);
+    items[id].med = sp; items[id].out = horiz.clone();
     addGlow(id, mesh);
   });
   [-1, 1].forEach(x => [-1, 1].forEach(y => [-1, 1].forEach(z => {
@@ -544,15 +551,15 @@ function init3D() {
     return new THREE.LineLoop(loopPts(pts), lineMat(op));
   }
   const R0 = Math.SQRT2;                       // el círculo que abraza la base del cubo
-  floor.add(square(R0, Math.PI / 4, 0.55), circle(R0, 0.4));      // huella del cubo
-  floor.add(square(2, 0, 0.3), circle(2, 0.5));                   // rombo inscrito en el círculo mayor
-  floor.add(circle(2.8, 0.3), circle(2.92, 0.16));
+  floor.add(square(R0, Math.PI / 4, 0.7), circle(R0, 0.55));      // huella del cubo
+  floor.add(square(2, 0, 0.5), circle(2, 0.6));                   // rombo inscrito en el círculo mayor
+  floor.add(circle(2.8, 0.4), circle(2.92, 0.22));
   const tk = [];
   for (let i = 0; i < 96; i++) {
     const a = (i / 96) * Math.PI * 2, r1 = 2.8, r2 = i % 8 === 0 ? 3.15 : 2.92;
     tk.push(V3(Math.cos(a) * r1, 0, Math.sin(a) * r1), V3(Math.cos(a) * r2, 0, Math.sin(a) * r2));
   }
-  const tickRing = new THREE.LineSegments(loopPts(tk), lineMat(0.3)); floor.add(tickRing);
+  const tickRing = new THREE.LineSegments(loopPts(tk), lineMat(0.42)); floor.add(tickRing);
 
   /* — Polvo flotante — */
   const N = 150, pPos = new Float32Array(N * 3), pSeed = new Float32Array(N);
@@ -579,8 +586,8 @@ function init3D() {
   function paint(id) {
     const it = items[id]; if (!it) return;
     const m = it.mesh.material, on = id === selectedId, hv = id === hoveredId;
-    tmp.copy(STONE_COL); if (selectedId && !on) tmp.multiplyScalar(0.6);
-    m.color.copy(tmp); m.emissive.setHex(on ? 0x4a3a14 : hv ? 0x2c2412 : 0x000000);
+    tmp.copy(STONE_COL); if (selectedId && !on) tmp.multiplyScalar(0.82);
+    m.color.copy(tmp); m.emissive.setHex(on ? 0x1c160a : hv ? 0x0f0c06 : 0x000000);
     if (it.glow) { it.glow.visible = on || hv; it.glow.material.opacity = on ? 0.95 : 0.55; }
   }
   function paintAll() { ORDER.forEach(paint); updateTag(); }
@@ -589,7 +596,7 @@ function init3D() {
   let focusDir = null, focusDist = 0, shiftX = 0, shiftY = 0, hasOffset = false;
   function fit() {
     const asp = W / H, t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    baseDist = 1.1 * Math.max(5.0 / (2 * t), 5.6 / (2 * t * asp));
+    baseDist = 1.08 * Math.max(5.0 / (2 * t), 5.6 / (2 * t * asp));
     controls.minDistance = baseDist * 0.45; controls.maxDistance = baseDist * 1.9;
     if (!touched) camera.position.copy(TARGET).addScaledVector(HOME_DIR, baseDist);
   }
@@ -610,7 +617,7 @@ function init3D() {
     const r = canvas.getBoundingClientRect();
     mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(mouse, camera);
-    const hit = ray.intersectObjects(targets, false)[0];
+    const hit = ray.intersectObjects(targets, false).find(h => h.object.visible && (!h.object.isSprite || h.object.material.opacity > 0.35));
     return hit ? hit.object.userData.id : null;
   }
   canvas.addEventListener('pointermove', ev => {
@@ -659,8 +666,14 @@ function init3D() {
       shiftX = shiftY = 0;
       if (hasOffset) { camera.clearViewOffset(); hasOffset = false; }
     } else { camera.setViewOffset(W, H, shiftX, shiftY, W, H); hasOffset = true; }
+    const cp = camera.position;
+    ORDER.forEach(id => {
+      const it = items[id]; if (!it.med) return;
+      const f = it.out.dot(cp.clone().sub(it.med.position).normalize());
+      it.med.material.opacity = Math.max(0, Math.min(1, (f + 0.05) / 0.3));
+    });
     if (tag.visible) {
-      const s = 2.3 * camera.position.distanceTo(TARGET) / baseDist;
+      const s = 1.3 * camera.position.distanceTo(TARGET) / baseDist;
       tag.scale.set(s, s * 0.1875, 1); tag.position.copy(tagAnchor).add(piedra.position);
     }
     controls.update();
@@ -674,7 +687,7 @@ function init3D() {
     repaint: paintAll,
     select: function (id) {
       paintAll();
-      if (id) { focusDir = items[id].dir.clone(); focusDist = baseDist * 0.8; touched = true; }
+      if (id) { focusDir = items[id].dir.clone(); focusDist = baseDist * 1.15; touched = true; }
       controls.autoRotate = !id && !userPaused;
     },
     refreshSpin: function () { controls.autoRotate = !selectedId && !userPaused; },
