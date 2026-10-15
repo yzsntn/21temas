@@ -1,54 +1,54 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Piedra Cúbica de Punta · 21 Temas</title>
+<!doctype html><html>
+<head><meta charset=utf8>
+  <meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <style>
+  :root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+  </style>
+</head>
+
+<body>
+<title>Piedra Cúbica de Punta</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="21temas-style.css">
-</head>
-<body>
-<div class="atmosphere"></div>
 
-<main class="main">
-  <div class="header-section">
-    <div class="header-badge"><div class="header-badge-dot"></div><span>Grado de Compañero</span></div>
-    <h1>La Piedra Cúbica de Punta en 3D</h1>
-    <p class="subtitle">Gira la piedra y toca sus caras y aristas: cada una guarda uno de los 21 temas del Grado de Compañero.</p>
+<div class="app" id="app">
+  <div class="halo"></div>
+  <canvas id="three" role="img" aria-label="Piedra cúbica de punta en tres dimensiones. Cada cara y arista guarda un tema."></canvas>
+  <div class="grain"></div>
+  <div class="frame"></div>
+
+  <header class="mast">
+    <p class="eyebrow">Grado de Compañero</p>
+    <h1>La Piedra Cúbica <em>de Punta</em></h1>
+    <p class="lede">Veintiún temas grabados en una sola piedra.</p>
+  </header>
+
+  <div class="tools" id="tools">
+    <button class="btn" id="spin" type="button" aria-pressed="true">Pausar</button>
+    <button class="btn" id="reset" type="button">Vista inicial</button>
   </div>
 
-  <div class="layout">
-    <section class="stage" id="stage">
-      <canvas id="three"></canvas>
-      <div class="legend">
-        <span><i style="background:#C8A97E"></i> Pirámide · 4 caras</span>
-        <span><i style="background:#949DAA"></i> Aristas del cubo · 12</span>
-        <span><i style="background:#768275"></i> Caras del cubo · 5</span>
-      </div>
-      <div class="stage-tools">
-        <button class="tool-btn" id="btn-spin">Pausar giro</button>
-        <button class="tool-btn" id="btn-reset">Restablecer</button>
-      </div>
-      <div class="hover-tip" id="tip"></div>
-      <div class="stage-hint">Arrastra para girar · rueda para acercar · toca una cara o arista</div>
-    </section>
+  <p class="nogl" id="nogl" hidden>No se pudo cargar la vista 3D. Elige un tema del índice inferior para leerlo.</p>
 
-    <aside class="side">
-      <div class="details-panel" id="details">
-        <span class="tag tag-cara" style="opacity:.6">Guía de exploración</span>
-        <h2 class="detail-title">Instrucción de uso</h2>
-        <div class="box">Selecciona cualquier cara o arista de la piedra, o un tema del índice, para ver su síntesis conceptual y su complemento filosófico. La vista girará sola hasta mostrártelo.</div>
-        <div class="box"><strong>Distribución</strong>Pirámide (4 caras): trascendencia. Aristas del cubo (12): ciencia, artes y deber. Caras del cubo (5): fundamentos y disciplina moral.</div>
-      </div>
-      <div class="index-panel" id="index"></div>
-    </aside>
+  <div class="dock">
+    <p class="cap" id="cap" aria-live="polite">Arrastra para girar · toca una cara o arista</p>
+    <nav class="rail" id="rail" aria-label="Los 21 temas"></nav>
+    <ul class="legend">
+      <li style="--c: var(--c-pir)"><i></i>Pirámide · 4</li>
+      <li style="--c: var(--c-ari)"><i></i>Aristas · 12</li>
+      <li style="--c: var(--c-car)"><i></i>Caras · 5</li>
+    </ul>
   </div>
-</main>
+
+  <aside class="sheet" id="sheet" aria-label="Detalle del tema" aria-hidden="true">
+    <div class="sheet-in" id="sheetBody"></div>
+  </aside>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="21temas-script.js"></script>
-</body>
-</html>
+
+</body></html>
