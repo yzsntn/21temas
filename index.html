@@ -1,10 +1,19 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Piedra Cúbica de Punta</title>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La Piedra Cúbica de Punta</title>
+<meta name="description" content="Los 21 temas del grado de Compañero grabados en una piedra cúbica de punta: recorrido guiado, índice y lectura.">
+<meta property="og:title" content="La Piedra Cúbica de Punta">
+<meta property="og:description" content="Los 21 temas del grado de Compañero grabados en una sola piedra.">
+<meta name="theme-color" content="#0A0B0E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="21temas-style.css">
-
+</head>
+<body>
 <div class="app" id="app">
   <div class="halo"></div>
   <canvas id="three" role="img" aria-label="Piedra cúbica de punta en tres dimensiones. Cada cara y arista guarda un tema."></canvas>
@@ -18,30 +27,64 @@
   </header>
 
   <div class="tools" id="tools">
+    <button class="btn" id="ixBtn" type="button" aria-expanded="false" aria-controls="index">Índice</button>
+    <button class="btn pri" id="tourBtn" type="button">Recorrido</button>
+    <button class="btn tg" id="explodeBtn" type="button" aria-pressed="false">Separar</button>
     <button class="btn" id="spin" type="button" aria-pressed="true">Pausar</button>
     <button class="btn" id="reset" type="button">Vista inicial</button>
+    <button class="btn" id="noteBtn" type="button" aria-haspopup="dialog">Del autor</button>
   </div>
 
-  <p class="nogl" id="nogl" hidden>No se pudo cargar la vista 3D. Elige un tema del índice inferior para leerlo.</p>
+  <p class="nogl" id="nogl" hidden>No se pudo cargar la vista 3D. Elige un tema del índice para leerlo.</p>
 
-  <div class="dock">
-    <p class="cap" id="cap" aria-live="polite">Arrastra para girar · toca una cara o arista</p>
+  <div class="dock" id="dock">
+    <p class="cap" id="cap" aria-live="polite">Arrastra para girar · toca una pieza · o empieza el recorrido</p>
     <nav class="rail" id="rail" aria-label="Los 21 temas"></nav>
-    <ul class="legend">
-      <li style="--c: var(--c-pir)"><i></i>Pirámide · 4</li>
-      <li style="--c: var(--c-ari)"><i></i>Aristas · 12</li>
-      <li style="--c: var(--c-car)"><i></i>Caras · 5</li>
+    <ul class="legend" id="legend">
+      <li><button type="button" data-g="piramide" aria-pressed="false" style="--c: var(--c-pir)"><i></i>Pirámide · 4</button></li>
+      <li><button type="button" data-g="arista" aria-pressed="false" style="--c: var(--c-ari)"><i></i>Aristas · 12</button></li>
+      <li><button type="button" data-g="cara" aria-pressed="false" style="--c: var(--c-car)"><i></i>Caras · 5</button></li>
     </ul>
   </div>
+
+  <div class="tourbar" id="tourbar" hidden>
+    <div class="tb-card" role="group" aria-label="Recorrido guiado">
+      <div class="tb-prog"><i id="tbFill"></i></div>
+      <div class="tb-row">
+        <p class="tb-info" id="tbInfo" aria-live="polite"></p>
+        <button class="btn ib" id="tbPrev" type="button" data-tour="prev" aria-label="Tema anterior">←</button>
+        <button class="btn" id="tbPlay" type="button" data-tour="play">Pausar</button>
+        <button class="btn ib" id="tbNext" type="button" data-tour="next" aria-label="Tema siguiente">→</button>
+        <span class="sp"></span>
+        <button class="btn tg" id="tbOrder" type="button" data-tour="order">Base → cúspide</button>
+        <button class="btn tg" id="tbVoice" type="button" data-tour="voice" aria-pressed="false">Voz</button>
+        <button class="btn" type="button" data-tour="exit">Salir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" id="note" role="dialog" aria-modal="true" aria-labelledby="noteT" aria-hidden="true">
+    <div class="note-card">
+      <button class="btn note-close" id="noteClose" type="button">Cerrar</button>
+      <p class="eyebrow" style="margin:0">Nota de autoría</p>
+      <h2 id="noteT">Del autor a sus Hermanos</h2>
+      <p>Queridos Hermanos: preparé este material con afecto fraternal, como una ofrenda al Taller y a quienes avanzan en el pulimento de su piedra. No busco créditos ni reconocimiento. Mi único deseo es que la instrucción que recibimos en Logia pueda acompañarlos también fuera del Templo, al alcance de la mano, cuando más la necesiten.</p>
+      <p>Lo que aquí encontrarán pertenece a la tradición de nuestra Orden y a los autores citados; mía es solo la voluntad de compartirlo.</p>
+      <p class="sig">Con un T∴ A∴ F∴,<b>Jesús Antonio Díaz Franco, M∴ M∴</b><span>Resp∴ Log∴ Simb∴ Lázaro Cárdenas No. 8</span></p>
+    </div>
+  </div>
+
+  <aside class="index" id="index" aria-label="Índice de los 21 temas" aria-hidden="true">
+    <div class="ix-top"><h2>Los 21 temas</h2><button class="btn" id="ixClose" type="button">Cerrar</button></div>
+    <div id="ixList"></div>
+  </aside>
 
   <aside class="sheet" id="sheet" aria-label="Detalle del tema" aria-hidden="true">
     <div class="sheet-in" id="sheetBody"></div>
   </aside>
 </div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="21temas-script.js"></script>
-
-
-</body></html>
+</body>
+</html>

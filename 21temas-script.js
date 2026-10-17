@@ -68,22 +68,112 @@ const TOPICS = {
 };
 
 const GROUPS = {
-  piramide: { kind: 'Cúspide piramidal', theme: 'Trascendencia',                 color: 0xD6BB85, hover: 0xE9D4A3, css: 'var(--c-pir)' },
-  arista:   { kind: 'Arista del cubo',   theme: 'Ciencia, artes y deber',         color: 0xA3AAB2, hover: 0xC4CAD1, css: 'var(--c-ari)' },
-  cara:     { kind: 'Cara del cubo',     theme: 'Fundamentos y disciplina moral', color: 0x8F9F89, hover: 0xAEBDA8, css: 'var(--c-car)' }
+  piramide: { kind: 'Cúspide piramidal', theme: 'Trascendencia',                 css: 'var(--c-pir)' },
+  arista:   { kind: 'Arista del cubo',   theme: 'Ciencia, artes y deber',         css: 'var(--c-ari)' },
+  cara:     { kind: 'Cara del cubo',     theme: 'Fundamentos y disciplina moral', css: 'var(--c-car)' }
 };
-const SELECT_COLOR = 0xF2E4BC;
 const ORDER = Object.keys(TOPICS).sort((a, b) => TOPICS[a].n - TOPICS[b].n);
-const HINT = 'Arrastra para girar · toca una cara o arista';
+const TOTAL = ORDER.length;
+const HINT = 'Arrastra para girar · toca una pieza · o empieza el recorrido';
+
+/* ═══ Geometría compartida por la piedra, el recorrido y la minipiedra ═══ */
+const FACE_MAP = { bottom: 't1', front: 't10', right: 't14', back: 't15', left: 't16' };
+const PYR_MAP = { front: 't19', right: 't11', back: 't18', left: 't17' };
+const EDGE_LIST = [
+  [[-1, 1, 1], [1, 1, 1], 't12'], [[1, 1, 1], [1, 1, -1], 't9'],
+  [[1, 1, -1], [-1, 1, -1], 't13'], [[-1, 1, -1], [-1, 1, 1], 't21'],
+  [[-1, -1, 1], [-1, 1, 1], 't3'], [[1, -1, 1], [1, 1, 1], 't4'],
+  [[1, -1, -1], [1, 1, -1], 't5'], [[-1, -1, -1], [-1, 1, -1], 't6'],
+  [[-1, -1, 1], [1, -1, 1], 't2'], [[1, -1, 1], [1, -1, -1], 't7'],
+  [[1, -1, -1], [-1, -1, -1], 't8'], [[-1, -1, -1], [-1, -1, 1], 't20']
+];
+const PYR_Y0 = 1, APEX_Y = 2.6, PB = 0.93;
+const PYR_DEF = {
+  front: [[-PB, PYR_Y0, PB], [PB, PYR_Y0, PB]], right: [[PB, PYR_Y0, PB], [PB, PYR_Y0, -PB]],
+  back: [[PB, PYR_Y0, -PB], [-PB, PYR_Y0, -PB]], left: [[-PB, PYR_Y0, -PB], [-PB, PYR_Y0, PB]]
+};
+const FACE_N = { bottom: [0, -1, 0], front: [0, 0, 1], right: [1, 0, 0], back: [0, 0, -1], left: [-1, 0, 0] };
+const SIDE_NAME = { front: 'frontal', right: 'derecha', back: 'posterior', left: 'izquierda' };
+// de la base a la cúspide: base, anillo inferior, pilares, caras, anillo superior, pirámide
+const TOUR_BASE = ['t1', 't2', 't7', 't8', 't20', 't3', 't4', 't5', 't6', 't10', 't14', 't15', 't16', 't12', 't9', 't13', 't21', 't19', 't11', 't18', 't17'];
+const TOUR_LISTS = { base: TOUR_BASE, num: ORDER };
+const TOUR_NAMES = { base: 'Base → cúspide', num: 'Orden 1 → 21' };
+
+const PIECE = {};
+Object.keys(FACE_MAP).forEach(k => {
+  PIECE[FACE_MAP[k]] = { kind: 'face', side: k, out: FACE_N[k],
+    label: k === 'bottom' ? 'Cara inferior · la base del cubo' : 'Cara ' + SIDE_NAME[k] + ' del cubo' };
+});
+Object.keys(PYR_MAP).forEach(k => {
+  PIECE[PYR_MAP[k]] = { kind: 'pyr', side: k, out: FACE_N[k], label: 'Cara ' + SIDE_NAME[k] + ' de la pirámide' };
+});
+EDGE_LIST.forEach(pr => {
+  const a = pr[0], b = pr[1], id = pr[2];
+  const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, mz = (a[2] + b[2]) / 2;
+  const horizontal = a[1] === b[1], hl = Math.hypot(mx, mz);
+  const side = Math.abs(mx) < 0.5 ? (mz > 0 ? 'frontal' : 'posterior') : (mx > 0 ? 'derecha' : 'izquierda');
+  PIECE[id] = {
+    kind: 'edge', a: a, b: b, out: [mx / hl, 0, mz / hl], ring: horizontal ? (my > 0 ? 1 : -1) : 0,
+    label: horizontal ? 'Arista ' + (my > 0 ? 'superior ' : 'inferior ') + side
+                      : 'Arista vertical · esquina ' + (mz > 0 ? 'frontal ' : 'posterior ') + (mx > 0 ? 'derecha' : 'izquierda')
+  };
+});
+function explodeDir(id) {
+  const P = PIECE[id]; let v;
+  if (P.kind === 'face') v = [P.out[0], P.out[1], P.out[2]];
+  else if (P.kind === 'pyr') v = [P.out[0], 0.9, P.out[2]];
+  else v = [P.out[0], P.ring * 0.6, P.out[2]];
+  const l = Math.hypot(v[0], v[1], v[2]);
+  return [v[0] / l, v[1] / l, v[2] / l];
+}
 
 const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const mobileMQ = window.matchMedia('(max-width: 760px)');
 const $ = id => document.getElementById(id);
 const app = $('app'), sheet = $('sheet'), sheetBody = $('sheetBody'), cap = $('cap'), rail = $('rail');
+const tourbar = $('tourbar'), indexEl = $('index'), ptr = { x: 0, y: 0 };
 
-let selectedId = null, hoveredId = null, userPaused = reduce, s3 = null, hoverLockUntil = 0;
+let selectedId = null, hoveredId = null, userPaused = reduce, s3 = null, hoverLockUntil = 0, filterGrp = null;
+const tour = { on: false, idx: -1, playing: true, t: 0, dur: 8, order: 'base', voice: false, speaking: false, started: false, spProg: 0 };
 
-/* ═══ Índice 1–21 ═══ */
+function roman(n) {
+  n = parseInt(n, 10); let s = '';
+  [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']].forEach(p => { while (n >= p[0]) { s += p[1]; n -= p[0]; } });
+  return s;
+}
+const listNow = () => (tour.on ? TOUR_LISTS[tour.order] : ORDER);
+
+/* ═══ Minipiedra: dónde está la pieza ═══ */
+function miniStone(id) {
+  const P = PIECE[id];
+  const view = Math.atan2(P.out[0], P.out[2]) + 0.62;
+  const el = (P.kind === 'face' && P.side === 'bottom') ? -0.5 : 0.45;
+  const cv = Math.cos(view), sv = Math.sin(view), ce = Math.cos(el), se = Math.sin(el);
+  const raw = p => { const x = p[0] * cv - p[2] * sv, z = p[0] * sv + p[2] * cv; return [x, p[1] * ce - z * se]; };
+  const apex = [0, APEX_Y, 0], pts = [raw(apex)];
+  EDGE_LIST.forEach(e => { pts.push(raw(e[0]), raw(e[1])); });
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  pts.forEach(p => { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); });
+  const S = 120, pad = 10, sc = Math.min((S - 2 * pad) / (x1 - x0), (S - 2 * pad) / (y1 - y0));
+  const T = p => { const r = raw(p); return [(S / 2 + (r[0] - (x0 + x1) / 2) * sc).toFixed(1), (S / 2 - (r[1] - (y0 + y1) / 2) * sc).toFixed(1)]; };
+  const line = (p, q, cls) => { const a = T(p), b = T(q); return '<line class="' + cls + '" x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '"/>'; };
+  const poly = (list, cls) => '<polygon class="' + cls + '" points="' + list.map(p => T(p).join(',')).join(' ') + '"/>';
+  let out = '<svg class="mini" viewBox="0 0 120 120" role="img" aria-label="Ubicación en la piedra: ' + P.label + '">';
+  EDGE_LIST.forEach(e => { out += line(e[0], e[1], 'mn'); });
+  [[-PB, PB], [PB, PB], [PB, -PB], [-PB, -PB]].forEach(c => { out += line([c[0], PYR_Y0, c[1]], apex, 'mn'); });
+  if (P.kind === 'edge') out += line(P.a, P.b, 'mh');
+  else if (P.kind === 'pyr') out += poly([PYR_DEF[P.side][0], PYR_DEF[P.side][1], apex], 'mh-f');
+  else {
+    const n = FACE_N[P.side];
+    const q = n[0] ? [[n[0], -1, -1], [n[0], 1, -1], [n[0], 1, 1], [n[0], -1, 1]]
+      : n[1] ? [[-1, n[1], -1], [1, n[1], -1], [1, n[1], 1], [-1, n[1], 1]]
+        : [[-1, -1, n[2]], [1, -1, n[2]], [1, 1, n[2]], [-1, 1, n[2]]];
+    out += poly(q, 'mh-f');
+  }
+  return out + '</svg>';
+}
+
+/* ═══ Índice 1–21 (base) e índice con nombres ═══ */
 ORDER.forEach(id => {
   const t = TOPICS[id];
   const b = document.createElement('button');
@@ -96,59 +186,279 @@ ORDER.forEach(id => {
   b.addEventListener('mouseleave', () => hover(null));
   rail.appendChild(b);
 });
+(function buildIndex() {
+  const groups = [['piramide', 'Pirámide'], ['arista', 'Aristas'], ['cara', 'Caras']];
+  $('ixList').innerHTML = groups.map(g =>
+    '<section class="ix-g"><h3 style="--g:' + GROUPS[g[0]].css + '"><i></i>' + g[1] + ' <span>' + GROUPS[g[0]].theme + '</span></h3>' +
+    ORDER.filter(id => TOPICS[id].grp === g[0]).map(id =>
+      '<button type="button" class="ix-row" id="ix-' + id + '" data-id="' + id + '"><span class="ix-n">' + roman(TOPICS[id].n) +
+      '</span><span class="ix-t">' + TOPICS[id].title + '</span></button>').join('') + '</section>').join('');
+})();
+function toggleIndex(force) {
+  const open = force === undefined ? !indexEl.classList.contains('open') : force;
+  indexEl.classList.toggle('open', open);
+  indexEl.setAttribute('aria-hidden', String(!open));
+  $('ixBtn').setAttribute('aria-expanded', String(open));
+}
+$('ixBtn').addEventListener('click', () => toggleIndex());
+$('ixClose').addEventListener('click', () => toggleIndex(false));
+$('ixList').addEventListener('click', e => {
+  const b = e.target.closest('.ix-row'); if (!b) return;
+  select(b.dataset.id, 'index');
+  if (mobileMQ.matches) toggleIndex(false);
+});
+$('ixList').addEventListener('mouseover', e => { const b = e.target.closest('.ix-row'); if (b) hover(b.dataset.id); });
+$('ixList').addEventListener('mouseleave', () => hover(null));
 
+/* ═══ Estado visible ═══ */
 function hover(id) {
   const prev = hoveredId; hoveredId = id;
   if (prev) { const p = $('pip-' + prev); if (p) p.classList.remove('hot'); }
   if (id) { const p = $('pip-' + id); if (p) p.classList.add('hot'); }
-  cap.textContent = id ? TOPICS[id].n + ' · ' + TOPICS[id].title : (s3 ? HINT : 'Elige un tema del índice');
+  cap.textContent = id ? TOPICS[id].n + ' · ' + TOPICS[id].title : capIdle();
   cap.classList.toggle('hot', !!id);
   if (s3) s3.repaint();
 }
-
-function roman(n) {
-  n = parseInt(n, 10); let s = '';
-  [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']].forEach(p => { while (n >= p[0]) { s += p[1]; n -= p[0]; } });
-  return s;
+function capIdle() {
+  if (filterGrp) {
+    const n = ORDER.filter(i => TOPICS[i].grp === filterGrp).length;
+    return GROUPS[filterGrp].kind + ' · ' + GROUPS[filterGrp].theme + ' · ' + n + ' temas';
+  }
+  return s3 ? HINT : 'Elige un tema del índice';
 }
+function setFilter(g) {
+  filterGrp = filterGrp === g ? null : g;
+  document.querySelectorAll('#legend button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.g === filterGrp)));
+  ORDER.forEach(id => $('pip-' + id).classList.toggle('dim', !!filterGrp && TOPICS[id].grp !== filterGrp));
+  if (!hoveredId) cap.textContent = capIdle();
+  if (s3) s3.repaint();
+}
+$('legend').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setFilter(b.dataset.g); });
+
+function setHash(id) {
+  try { history.replaceState(null, '', id ? '#' + id : location.pathname + location.search); } catch (err) { /* el marco puede impedirlo */ }
+}
+function readSecs(id) {
+  const t = TOPICS[id], words = (t.title + ' ' + t.sint + ' ' + t.comp).split(/\s+/).length;
+  return Math.max(9, Math.min(45, Math.round(words / 3.1 + 4)));
+}
+
+/* ═══ Panel de lectura ═══ */
+function renderSheet(id, prev) {
+  const t = TOPICS[id], g = GROUPS[t.grp], P = PIECE[id], list = listNow(), n = list.length, i = list.indexOf(id);
+  let d = 0;
+  if (prev && prev !== id) {
+    const j = list.indexOf(prev);
+    if (j >= 0 && i >= 0) { d = i - j; if (Math.abs(d) > n / 2) d = -d; d = d > 0 ? 1 : -1; }
+  }
+  const from = prev && list.indexOf(prev) >= 0 ? (list.indexOf(prev) + 1) / n * 100 : 0;
+  const to = (Math.max(i, 0) + 1) / n * 100;
+  sheetBody.dataset.dir = d > 0 ? 'fwd' : d < 0 ? 'back' : 'up';
+  sheetBody.classList.remove('anim'); void sheetBody.offsetWidth; sheetBody.classList.add('anim');
+  sheetBody.innerHTML =
+    '<button class="grip" type="button" data-act="grip" aria-label="Ampliar o reducir el panel"><i></i></button>' +
+    '<div class="sh-top rv" style="--i:0"><span class="kind" style="--g:' + g.css + '">' + g.kind + ' · ' + g.theme + '</span>' +
+    '<button class="btn close" type="button" data-act="close" aria-label="Cerrar el detalle">Cerrar</button></div>' +
+    '<div class="sh-id rv" style="--i:1"><div class="num" aria-hidden="true">' + roman(t.n) + '</div>' + miniStone(id) + '</div>' +
+    '<p class="where rv" style="--i:2">' + P.label + ' · tema ' + t.n + ' de ' + TOTAL + '</p>' +
+    '<div class="track rv" style="--i:2"><i style="--from:' + from.toFixed(1) + '%;--w:' + to.toFixed(1) + '%"></i></div>' +
+    '<h2 class="sh-title rv" style="--i:3" id="shTitle" tabindex="-1">' + t.title + '</h2>' +
+    '<section class="sec lead rv" style="--i:4"><h3>Síntesis</h3><p>' + t.sint + '</p></section>' +
+    '<section class="sec rv" style="--i:5"><h3>Complemento</h3><p>' + t.comp + '</p></section>' +
+    '<div class="pager rv" style="--i:6"><button class="btn" type="button" data-act="prev" data-id="' + list[(i + n - 1) % n] + '">← Anterior</button>' +
+    '<button class="btn" type="button" data-act="next" data-id="' + list[(i + 1) % n] + '">Siguiente →</button></div>';
+  sheet.scrollTop = 0;
+}
+
 function select(id, from) {
-  if (from === 'rail' || from === 'pager') { hoverLockUntil = performance.now() + 800; if (hoveredId) hover(null); }
-  selectedId = id;
+  if (s3) s3.skipIntro();
+  if (from === 'rail' || from === 'pager' || from === 'index') { hoverLockUntil = performance.now() + 800; if (hoveredId) hover(null); }
+  if (tour.on && from !== 'tour') {                       // el visitante toma el control: el recorrido se pausa
+    tour.playing = false; stopSpeech();
+    if (id) { const k = TOUR_LISTS[tour.order].indexOf(id); if (k >= 0) tour.idx = k; }
+    paintTour();
+  }
+  const prev = selectedId; selectedId = id;
   const open = !!id;
   document.body.classList.toggle('is-open', open);
   sheet.classList.toggle('open', open);
+  if (!open) sheet.classList.remove('expanded');
   sheet.setAttribute('aria-hidden', open ? 'false' : 'true');
-  document.querySelectorAll('.pip.on').forEach(e => e.classList.remove('on'));
+  document.querySelectorAll('.pip.on, .ix-row.on').forEach(e => e.classList.remove('on'));
   if (open) {
-    const t = TOPICS[id], g = GROUPS[t.grp], i = ORDER.indexOf(id);
     const pip = $('pip-' + id); pip.classList.add('on');
+    const ix = $('ix-' + id); if (ix) ix.classList.add('on');
     rail.scrollTo({ left: pip.offsetLeft - (rail.clientWidth - pip.offsetWidth) / 2, behavior: reduce ? 'auto' : 'smooth' });
-    sheetBody.innerHTML =
-      '<div class="sh-top"><span class="kind" style="--g:' + g.css + '">' + g.kind + ' · ' + g.theme + '</span>' +
-      '<button class="btn close" type="button" data-act="close" aria-label="Cerrar el detalle">Cerrar</button></div>' +
-      '<div class="num" aria-hidden="true">' + roman(t.n) + '</div>' +
-      '<h2 class="sh-title" id="shTitle" tabindex="-1">' + t.title + '</h2>' +
-      '<section class="sec"><h3>Síntesis</h3><p>' + t.sint + '</p></section>' +
-      '<section class="sec"><h3>Complemento</h3><p>' + t.comp + '</p></section>' +
-      '<div class="pager"><button class="btn" type="button" data-act="prev" data-id="' + ORDER[(i + ORDER.length - 1) % ORDER.length] + '">← Anterior</button>' +
-      '<button class="btn" type="button" data-act="next" data-id="' + ORDER[(i + 1) % ORDER.length] + '">Siguiente →</button></div>';
-    sheet.scrollTop = 0;
+    renderSheet(id, prev);
     if (from === 'canvas') { const h = $('shTitle'); if (h) h.focus({ preventScroll: true }); }
   }
-  if (s3) s3.select(id);
+  setHash(id);
+  if (s3) s3.select(id, from === 'tour');
 }
 
+function step(delta) {
+  if (tour.on) { tourGo(tour.idx + delta); return; }
+  if (!selectedId) return;
+  const i = ORDER.indexOf(selectedId);
+  select(ORDER[(i + delta + TOTAL) % TOTAL], 'pager');
+}
 sheetBody.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   if (b.dataset.act === 'close') select(null);
+  else if (b.dataset.act === 'grip') sheet.classList.toggle('expanded');
   else select(b.dataset.id, 'pager');
 });
+(function swipe() {                                        // en el celular, deslizar cambia de tema; el asa amplía el panel
+  let sx = 0, sy = 0, st = 0;
+  sheet.addEventListener('touchstart', e => { const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); }, { passive: true });
+  sheet.addEventListener('touchend', e => {
+    if (!mobileMQ.matches || !selectedId) return;
+    const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Date.now() - st > 700) return;
+    if (e.target.closest('.grip') && Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) { sheet.classList.toggle('expanded', dy < 0); return; }
+    if (Math.abs(dx) > 70 && Math.abs(dy) < 50) step(dx < 0 ? 1 : -1);
+  }, { passive: true });
+})();
+
+/* ═══ Voz (opcional) ═══ */
+const canSpeak = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+let speakGen = 0;
+function stopSpeech() {
+  speakGen++; tour.speaking = false; tour.started = false;
+  if (canSpeak) { try { speechSynthesis.cancel(); } catch (err) { /* sin voz */ } }
+}
+function pickVoice() {
+  let vs = []; try { vs = speechSynthesis.getVoices(); } catch (err) { /* sin voz */ }
+  return vs.find(v => /^es[-_]MX/i.test(v.lang)) || vs.find(v => /^es/i.test(v.lang)) || null;
+}
+function speak(text) {
+  if (!canSpeak || !tour.voice || !tour.playing) return;
+  const gen = ++speakGen, parts = text.match(/[^.!?…]+[.!?…]*/g) || [text];
+  let k = 0; tour.spProg = 0; tour.speaking = true; tour.started = false;
+  setTimeout(() => { if (gen === speakGen && !tour.started) tour.speaking = false; }, 2500);   // si no hay voz, sigue el temporizador
+  (function next() {
+    if (gen !== speakGen) return;
+    if (k >= parts.length) { tour.speaking = false; tour.t = Math.max(tour.t, tour.dur - 1.5); return; }
+    const u = new SpeechSynthesisUtterance(parts[k].trim()), v = pickVoice();
+    if (v) u.voice = v;
+    u.lang = v ? v.lang : 'es-MX'; u.rate = 0.95;
+    u.onstart = () => { if (gen === speakGen) tour.started = true; };
+    u.onend = () => { if (gen !== speakGen) return; k++; tour.spProg = k / parts.length; next(); };
+    u.onerror = () => { if (gen === speakGen) tour.speaking = false; };
+    try { speechSynthesis.speak(u); } catch (err) { tour.speaking = false; }
+  })();
+}
+
+/* ═══ Recorrido guiado ═══ */
+function introText() {
+  return 'Veintiún temas grabados en una sola piedra. ' +
+    (tour.order === 'base' ? 'Comenzamos por la base y ascendemos hasta la cúspide.' : 'Los recorremos en orden numérico, del uno al veintiuno.');
+}
+function speakCurrent() {
+  const list = TOUR_LISTS[tour.order];
+  if (tour.idx < 0) speak(introText());
+  else if (tour.idx < list.length) { const t = TOPICS[list[tour.idx]]; speak('Tema ' + t.n + '. ' + t.title + '. ' + t.sint + ' ' + t.comp); }
+}
+function paintFill() {
+  const list = TOUR_LISTS[tour.order];
+  let f = tour.idx >= list.length ? 1 : (tour.speaking && tour.started ? tour.spProg : tour.t / tour.dur);
+  $('tbFill').style.width = Math.max(0, Math.min(1, f)) * 100 + '%';
+}
+function paintTour() {
+  const list = TOUR_LISTS[tour.order], info = $('tbInfo'), end = tour.idx >= list.length;
+  document.body.classList.toggle('is-tour', tour.on);
+  tourbar.hidden = !tour.on;
+  if (!tour.on) return;
+  info.classList.toggle('story', tour.idx < 0 || end);
+  if (tour.idx < 0) info.textContent = introText();
+  else if (end) info.textContent = 'Fin del recorrido. Has visto los ' + TOTAL + ' temas; ahora la piedra es tuya.';
+  else { const id = list[tour.idx]; info.innerHTML = '<b>' + roman(TOPICS[id].n) + '</b> · ' + (tour.idx + 1) + ' de ' + TOTAL + ' · ' + PIECE[id].label; }
+  $('tbPlay').textContent = end ? 'Repetir' : tour.playing ? 'Pausar' : 'Seguir';
+  $('tbPrev').disabled = tour.idx < 0;
+  $('tbNext').disabled = end;
+  $('tbOrder').textContent = TOUR_NAMES[tour.order];
+  const vb = $('tbVoice'); vb.setAttribute('aria-pressed', String(tour.voice)); vb.hidden = !canSpeak;
+  paintFill();
+}
+function tourGo(i) {
+  const list = TOUR_LISTS[tour.order];
+  stopSpeech(); tour.t = 0; tour.spProg = 0;
+  tour.idx = Math.max(-1, Math.min(list.length, i));
+  if (tour.idx < 0) { tour.dur = 8; select(null, 'tour'); if (s3) s3.reset(true); }
+  else if (tour.idx >= list.length) { tour.playing = false; select(null, 'tour'); if (s3) s3.reset(true); }
+  else { const id = list[tour.idx]; tour.dur = readSecs(id); select(id, 'tour'); }
+  paintTour();
+  if (tour.playing) speakCurrent();
+}
+function tourStart() {
+  if (filterGrp) setFilter(filterGrp);
+  if (s3) s3.setExplode(false);
+  $('explodeBtn').setAttribute('aria-pressed', 'false'); $('explodeBtn').textContent = 'Separar';
+  toggleIndex(false);
+  tour.on = true; tour.playing = true;
+  tourGo(-1);
+}
+function tourExit() {
+  stopSpeech(); tour.on = false; tour.playing = true; tour.idx = -1;
+  paintTour(); select(null); if (s3) s3.reset();
+  cap.textContent = capIdle();
+}
+setInterval(function () {
+  if (!tour.on || !tour.playing || document.hidden) return;
+  if (tour.idx >= TOUR_LISTS[tour.order].length) return;
+  if (!(tour.speaking && tour.started)) tour.t += 0.1;
+  if (tour.t >= tour.dur && !(tour.speaking && tour.started)) { tourGo(tour.idx + 1); return; }
+  paintFill();
+}, 100);
+tourbar.addEventListener('click', e => {
+  const b = e.target.closest('[data-tour]'); if (!b) return;
+  const list = TOUR_LISTS[tour.order], act = b.dataset.tour;
+  if (act === 'exit') tourExit();
+  else if (act === 'prev') tourGo(tour.idx - 1);
+  else if (act === 'next') tourGo(tour.idx + 1);
+  else if (act === 'play') {
+    if (tour.idx >= list.length) { tour.playing = true; tourGo(-1); return; }
+    tour.playing = !tour.playing;
+    if (!tour.playing) { stopSpeech(); paintTour(); return; }
+    if (tour.idx >= 0 && selectedId !== list[tour.idx]) tourGo(tour.idx); else { paintTour(); speakCurrent(); }
+  } else if (act === 'order') {
+    const cur = tour.idx >= 0 && tour.idx < list.length ? list[tour.idx] : null;
+    tour.order = tour.order === 'base' ? 'num' : 'base';
+    const k = cur ? TOUR_LISTS[tour.order].indexOf(cur) : -1;
+    tourGo(cur ? k : -1);
+  } else if (act === 'voice') {
+    tour.voice = !tour.voice;
+    if (tour.voice) speakCurrent(); else stopSpeech();
+    paintTour();
+  }
+});
+$('tourBtn').addEventListener('click', () => { if (tour.on) tourExit(); else tourStart(); });
+
+/* ═══ Teclado y botones ═══ */
+function toggleNote(open) {
+  const n = $('note'); n.classList.toggle('open', open); n.setAttribute('aria-hidden', String(!open));
+  if (open) $('noteClose').focus(); else $('noteBtn').focus();
+}
+$('noteBtn').addEventListener('click', () => toggleNote(true));
+$('noteClose').addEventListener('click', () => toggleNote(false));
+$('note').addEventListener('click', e => { if (e.target === $('note')) toggleNote(false); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && selectedId) { select(null); return; }
+  if (s3) s3.skipIntro();
+  if (e.key === 'Escape' && $('note').classList.contains('open')) { toggleNote(false); return; }
+  if (e.key === 'Escape') {
+    if (indexEl.classList.contains('open')) { toggleIndex(false); return; }
+    if (tour.on) { tourExit(); return; }
+    if (selectedId) select(null);
+    return;
+  }
+  if (tour.on) {
+    if (e.key === 'ArrowRight') tourGo(tour.idx + 1);
+    else if (e.key === 'ArrowLeft') tourGo(tour.idx - 1);
+    else if (e.key === ' ' && !e.target.closest('button, a, input')) { e.preventDefault(); $('tbPlay').click(); }
+    return;
+  }
   if (!selectedId) return;
-  const i = ORDER.indexOf(selectedId);
-  if (e.key === 'ArrowRight') select(ORDER[(i + 1) % ORDER.length], 'key');
-  else if (e.key === 'ArrowLeft') select(ORDER[(i + ORDER.length - 1) % ORDER.length], 'key');
+  if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1);
 });
 
 const spinBtn = $('spin');
@@ -158,6 +468,13 @@ function paintSpinBtn() {
 }
 spinBtn.addEventListener('click', () => { userPaused = !userPaused; paintSpinBtn(); if (s3) s3.refreshSpin(); });
 $('reset').addEventListener('click', () => { select(null); if (s3) s3.reset(); });
+$('explodeBtn').addEventListener('click', () => {
+  const on = $('explodeBtn').getAttribute('aria-pressed') !== 'true';
+  $('explodeBtn').setAttribute('aria-pressed', String(on)); $('explodeBtn').textContent = on ? 'Unir' : 'Separar';
+  if (s3) s3.setExplode(on);
+});
+window.addEventListener('pointermove', ev => { ptr.x = ev.clientX / window.innerWidth * 2 - 1; ptr.y = -(ev.clientY / window.innerHeight * 2 - 1); });
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (TOPICS[h] && h !== selectedId) select(h, 'link'); });
 
 /* ═══ Escena 3D ═══ */
 function init3D() {
@@ -174,6 +491,9 @@ function init3D() {
   const TARGET = new THREE.Vector3(0, 0.6, 0);
   const HOME_DIR = new THREE.Vector3(0.62, 0.36, 0.7).normalize();
   const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  const vA = V3(0, 0, 0), vB = V3(0, 0, 0);
+  const clamp01 = v => Math.max(0, Math.min(1, v));
+  const easeOut = v => 1 - Math.pow(1 - clamp01(v), 3);
   let baseDist = 11, touched = false, W = 1, H = 1;
 
   const controls = new THREE.OrbitControls(camera, canvas);
@@ -186,9 +506,10 @@ function init3D() {
   const key = new THREE.DirectionalLight(0xfff6ea, 1.05); key.position.set(5, 9, 6); scene.add(key);
   const rim = new THREE.DirectionalLight(0x8fa6d6, 0.55); rim.position.set(-7, 3, -6); scene.add(rim);
   const under = new THREE.DirectionalLight(0xc6a56a, 0.1); under.position.set(0, -6, 2); scene.add(under);
+  const glint = new THREE.PointLight(0xffe0a0, 0, 9, 2); glint.position.set(3, 1.6, 0); scene.add(glint);   // destello dorado que pasa de vez en cuando
 
   /* — Una sola piedra: caliza de grano fino, hueso cálido — */
-  /*STONEGEN-START*/
+/*STONEGEN-START*/
   function genStoneSet(seed, opts) {
     opts = opts || {};
     const S = 512, N = S * S;
@@ -309,10 +630,7 @@ function init3D() {
   const STONE_COLOR = 0xC6C5C0;
   const matsByGroup = { piramide: [], arista: [], cara: [] };
   function makeMat(grp) {
-    const m = new THREE.MeshStandardMaterial({
-      color: STONE_COLOR, roughness: 1, metalness: 0,
-      side: THREE.DoubleSide, emissive: 0x000000
-    });
+    const m = new THREE.MeshStandardMaterial({ color: STONE_COLOR, roughness: 1, metalness: 0, side: THREE.DoubleSide, emissive: 0x000000 });
     matsByGroup[grp].push(m);
     return m;
   }
@@ -331,19 +649,6 @@ function init3D() {
   /* — Rótulos grabados — */
   const relabels = [];
   const SERIF = '"Cormorant Garamond", Georgia, serif';
-  function wrapText(ctx, text, maxW) {
-    const words = text.split(' '), lines = []; let line = '';
-    words.forEach(w => {
-      const test = line ? line + ' ' + w : w;
-      if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test;
-    });
-    lines.push(line); return lines;
-  }
-  function roman(n) {
-    n = parseInt(n, 10); let s = '';
-    [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']].forEach(p => { while (n >= p[0]) { s += p[1]; n -= p[0]; } });
-    return s;
-  }
   function faceTexture(num, pyr) {
     const c = document.createElement('canvas'); c.width = c.height = 512;
     const ctx = c.getContext('2d'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -381,93 +686,74 @@ function init3D() {
     return new THREE.Sprite(mat);
   }
 
-  /* — Piedra — */
+  /* — Piedra: cada pieza vive en su propio grupo para poder separarse y armarse — */
   const piedra = new THREE.Group(); scene.add(piedra);
-  const items = {}, targets = [];
+  const items = {}, targets = [], pg = {};
+  function pieceGroup(id) { const g = new THREE.Group(); piedra.add(g); pg[id] = g; return g; }
   function register(id, obj, dir) {
     obj.userData.id = id; targets.push(obj);
-    items[id] = { mesh: obj, grp: TOPICS[id].grp, dir: dir.clone().normalize() };
+    items[id] = { mesh: obj, grp: TOPICS[id].grp, dir: dir.clone().normalize(), lift: 0 };
   }
-
-  const FACE_MAP = { bottom: 't1', front: 't10', right: 't14', back: 't15', left: 't16' };
-  const PYR_MAP = { front: 't19', right: 't11', back: 't18', left: 't17' };
-  const EDGE_LIST = [
-    [[-1, 1, 1], [1, 1, 1], 't12'], [[1, 1, 1], [1, 1, -1], 't9'],
-    [[1, 1, -1], [-1, 1, -1], 't13'], [[-1, 1, -1], [-1, 1, 1], 't21'],
-    [[-1, -1, 1], [-1, 1, 1], 't3'], [[1, -1, 1], [1, 1, 1], 't4'],
-    [[1, -1, -1], [1, 1, -1], 't5'], [[-1, -1, -1], [-1, 1, -1], 't6'],
-    [[-1, -1, 1], [1, -1, 1], 't2'], [[1, -1, 1], [1, -1, -1], 't7'],
-    [[1, -1, -1], [-1, -1, -1], 't8'], [[-1, -1, -1], [-1, -1, 1], 't20']
-  ];
-  const PYR_Y0 = 1, APEX_Y = 2.6;
-
-  const PB = 0.93;                         // la pirámide asienta un poco hacia dentro del cubo
   const GOLD = 0xC6A56A;
   const goldMat = new THREE.MeshStandardMaterial({ color: 0xC9A869, roughness: 0.38, metalness: 0.5, emissive: 0x2a2008 });
-  function addGlow(id, mesh) {
+  function addGlow(id, mesh, parent) {
     const g = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),
       new THREE.LineBasicMaterial({ color: 0xF0D28A, transparent: true, opacity: 0.9, depthTest: false, depthWrite: false }));
     g.position.copy(mesh.position); g.quaternion.copy(mesh.quaternion); g.renderOrder = 6; g.visible = false;
-    piedra.add(g); items[id].glow = g;
+    parent.add(g); items[id].glow = g;
   }
 
   // 5 caras del cubo: panel hundido con filete dorado
-  const faceN = { bottom: V3(0, -1, 0), front: V3(0, 0, 1), right: V3(1, 0, 0), back: V3(0, 0, -1), left: V3(-1, 0, 0) };
+  const faceN = {}; Object.keys(FACE_N).forEach(k => { faceN[k] = V3(FACE_N[k][0], FACE_N[k][1], FACE_N[k][2]); });
   const frameGeo = new THREE.BufferGeometry().setFromPoints([V3(-0.883, -0.883, 0), V3(0.883, -0.883, 0), V3(0.883, 0.883, 0), V3(-0.883, 0.883, 0)]);
   const frameMat = new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.6 });
   Object.keys(FACE_MAP).forEach(k => {
-    const id = FACE_MAP[k], nrm = faceN[k], pos = nrm.clone();
+    const id = FACE_MAP[k], nrm = faceN[k], pos = nrm.clone(), g = pieceGroup(id);
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), makeMat('cara'));
     mesh.position.copy(pos); mesh.lookAt(pos.clone().add(nrm));
-    piedra.add(mesh);
-    const dir = k === 'bottom' ? V3(0, -1, 0.2) : nrm;
-    register(id, mesh, dir);
-    items[id].anchor = V3(0, APEX_Y + 0.7, 0);
-    addGlow(id, mesh);
+    g.add(mesh);
+    register(id, mesh, k === 'bottom' ? V3(0, -1, 0.2) : nrm);
+    addGlow(id, mesh, g);
     const fr = new THREE.LineLoop(frameGeo, frameMat);
-    fr.position.copy(pos).addScaledVector(nrm, 0.012); fr.quaternion.copy(mesh.quaternion); piedra.add(fr);
-    addFaceLabel(pos, nrm, 1.75, id, false, piedra);
+    fr.position.copy(pos).addScaledVector(nrm, 0.012); fr.quaternion.copy(mesh.quaternion); g.add(fr);
+    addFaceLabel(pos, nrm, 1.75, id, false, g);
   });
 
   // 4 caras de la pirámide
   const apex = V3(0, APEX_Y, 0);
-  const pyrDefs = {
-    front: [[-PB, PYR_Y0, PB], [PB, PYR_Y0, PB]], right: [[PB, PYR_Y0, PB], [PB, PYR_Y0, -PB]],
-    back: [[PB, PYR_Y0, -PB], [-PB, PYR_Y0, -PB]], left: [[-PB, PYR_Y0, -PB], [-PB, PYR_Y0, PB]]
-  };
   Object.keys(PYR_MAP).forEach(k => {
-    const id = PYR_MAP[k];
-    const a = V3(...pyrDefs[k][0]), b = V3(...pyrDefs[k][1]);
+    const id = PYR_MAP[k], g = pieceGroup(id);
+    const a = V3(...PYR_DEF[k][0]), b = V3(...PYR_DEF[k][1]);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute([a.x, a.y, a.z, b.x, b.y, b.z, apex.x, apex.y, apex.z], 3));
     geo.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0.5, 1], 2));
     geo.computeVertexNormals();
     const mesh = new THREE.Mesh(geo, makeMat('piramide'));
-    piedra.add(mesh);
+    g.add(mesh);
     const nrm = new THREE.Vector3().crossVectors(b.clone().sub(a), apex.clone().sub(a)).normalize();
     register(id, mesh, nrm.clone().add(V3(0, 0.15, 0)));
     const mid = a.clone().add(b).multiplyScalar(0.5);
     const p = mid.clone().add(apex.clone().sub(mid).multiplyScalar((1.58 - PYR_Y0) / (APEX_Y - PYR_Y0)));
-    items[id].anchor = V3(0, APEX_Y + 0.7, 0);
-    addGlow(id, mesh);
-    addFaceLabel(p, nrm, 1.25, id, true, piedra);
+    addGlow(id, mesh, g);
+    addFaceLabel(p, nrm, 1.25, id, true, g);
   });
   const pyrPts = [[-PB, PYR_Y0, PB], [PB, PYR_Y0, PB], [PB, PYR_Y0, PB], [PB, PYR_Y0, -PB], [PB, PYR_Y0, -PB], [-PB, PYR_Y0, -PB], [-PB, PYR_Y0, -PB], [-PB, PYR_Y0, PB]]
     .map(p => V3(...p))
     .concat([[-PB, PYR_Y0, PB], [PB, PYR_Y0, PB], [PB, PYR_Y0, -PB], [-PB, PYR_Y0, -PB]].flatMap(p => [V3(...p), apex]));
-  piedra.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pyrPts),
-    new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.75 })));
+  const pyrLine = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pyrPts),
+    new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.75 }));
+  piedra.add(pyrLine);
 
   // 12 aristas achaflanadas, con nervio dorado, gema y medallón numerado
   EDGE_LIST.forEach(pair => {
-    const a = V3(...pair[0]), b = V3(...pair[1]), id = pair[2];
+    const a = V3(...pair[0]), b = V3(...pair[1]), id = pair[2], g = pieceGroup(id);
     const mid = a.clone().add(b).multiplyScalar(0.5), dirE = b.clone().sub(a).normalize();
     const len = a.distanceTo(b);
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.15, len + 0.1, 0.15), makeMat('arista'));
     mesh.position.copy(mid);
     mesh.quaternion.setFromUnitVectors(V3(0, 1, 0), dirE);
     mesh.rotateY(Math.PI / 4);                                   // la faceta plana mira hacia fuera
-    piedra.add(mesh);
+    g.add(mesh);
     register(id, mesh, mid.clone());
     const out = mid.clone().sub(dirE.clone().multiplyScalar(mid.dot(dirE))).normalize();
     const lo = out.applyQuaternion(mesh.quaternion.clone().invert());
@@ -484,16 +770,21 @@ function init3D() {
     if (mid.y < 0 && !vertical) { sp.position.y += 0.16; sp.position.addScaledVector(horiz, 0.06); }
     sp.material.depthTest = false;
     sp.renderOrder = 3;
-    piedra.add(sp);
+    g.add(sp);
     register(id, sp, mid.clone());      // el medallón también abre el tema
     items[id].mesh = mesh;              // …pero el estado vive en la arista
-    items[id].anchor = V3(0, APEX_Y + 0.7, 0);
     items[id].med = sp; items[id].out = horiz.clone();
-    addGlow(id, mesh);
+    addGlow(id, mesh, g);
   });
+  ORDER.forEach(id => {
+    const xd = explodeDir(id);
+    items[id].xd = V3(xd[0], xd[1], xd[2]);
+    items[id].xdist = PIECE[id].kind === 'pyr' ? 1.5 : 1.15;
+  });
+  const corners = [];
   [-1, 1].forEach(x => [-1, 1].forEach(y => [-1, 1].forEach(z => {
     const s = new THREE.Mesh(new THREE.SphereGeometry(0.1, 14, 14), goldMat);
-    s.position.set(x, y, z); piedra.add(s);
+    s.position.set(x, y, z); piedra.add(s); corners.push(s);
   })));
 
   /* — Rótulo del tema: aparece al señalar o elegir una pieza — */
@@ -501,7 +792,7 @@ function init3D() {
   const tagTex = new THREE.CanvasTexture(tagCv);
   const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tagTex, transparent: true, depthTest: false, depthWrite: false }));
   tag.renderOrder = 10; tag.visible = false; scene.add(tag);
-  const tagAnchor = V3(0, 0, 0); let tagId = null;
+  let tagId = null;
   function drawTag(id) {
     const ctx = tagCv.getContext('2d'), tp = TOPICS[id];
     ctx.clearRect(0, 0, 1024, 192);
@@ -525,10 +816,10 @@ function init3D() {
     const id = hoveredId || selectedId;
     if (!id || !items[id]) { tag.visible = false; tagId = null; return; }
     if (id !== tagId) { tagId = id; drawTag(id); }
-    tagAnchor.copy(items[id].anchor); tag.visible = true;
+    tag.visible = true;
   }
 
-  /* — Suelo: sombra, círculos y cuadrados — */
+  /* — Suelo: sombra, círculos y cuadrados, medidos sobre el cubo — */
   const FLOOR_Y = -1.14;
   (function () {
     const c = document.createElement('canvas'); c.width = c.height = 256;
@@ -551,8 +842,8 @@ function init3D() {
     return new THREE.LineLoop(loopPts(pts), lineMat(op));
   }
   const R0 = Math.SQRT2;                       // el círculo que abraza la base del cubo
-  floor.add(square(R0, Math.PI / 4, 0.7), circle(R0, 0.55));      // huella del cubo
-  floor.add(square(2, 0, 0.5), circle(2, 0.6));                   // rombo inscrito en el círculo mayor
+  floor.add(square(R0, Math.PI / 4, 0.7), circle(R0, 0.55));
+  floor.add(square(2, 0, 0.5), circle(2, 0.6));
   floor.add(circle(2.8, 0.4), circle(2.92, 0.22));
   const tk = [];
   for (let i = 0; i < 96; i++) {
@@ -560,10 +851,11 @@ function init3D() {
     tk.push(V3(Math.cos(a) * r1, 0, Math.sin(a) * r1), V3(Math.cos(a) * r2, 0, Math.sin(a) * r2));
   }
   const tickRing = new THREE.LineSegments(loopPts(tk), lineMat(0.42)); floor.add(tickRing);
+  floor.children.forEach(c => { c.userData.op = c.material.opacity; });
 
   /* — Polvo flotante — */
-  const N = 150, pPos = new Float32Array(N * 3), pSeed = new Float32Array(N);
-  for (let i = 0; i < N; i++) {
+  const NP = 150, pPos = new Float32Array(NP * 3), pSeed = new Float32Array(NP);
+  for (let i = 0; i < NP; i++) {
     const r = 1.8 + Math.random() * 3.8, a = Math.random() * Math.PI * 2;
     pPos[i * 3] = Math.cos(a) * r; pPos[i * 3 + 1] = -1 + Math.random() * 6.5; pPos[i * 3 + 2] = Math.sin(a) * r;
     pSeed[i] = 0.4 + Math.random();
@@ -586,14 +878,18 @@ function init3D() {
   function paint(id) {
     const it = items[id]; if (!it) return;
     const m = it.mesh.material, on = id === selectedId, hv = id === hoveredId;
-    tmp.copy(STONE_COL); if (selectedId && !on) tmp.multiplyScalar(0.82);
-    m.color.copy(tmp); m.emissive.setHex(on ? 0x1c160a : hv ? 0x0f0c06 : 0x000000);
-    if (it.glow) { it.glow.visible = on || hv; it.glow.material.opacity = on ? 0.95 : 0.55; }
+    const inF = !!filterGrp && it.grp === filterGrp, outF = !!filterGrp && it.grp !== filterGrp;
+    tmp.copy(STONE_COL);
+    if (selectedId && !on) tmp.multiplyScalar(0.82);
+    if (outF && !on && !hv) tmp.multiplyScalar(0.5);
+    m.color.copy(tmp);
+    m.emissive.setHex(on ? 0x1c160a : hv ? 0x0f0c06 : inF ? 0x0a0804 : 0x000000);
+    if (it.glow) { it.glow.visible = on || hv || inF; it.glow.material.opacity = on ? 0.95 : hv ? 0.55 : 0.4; }
   }
   function paintAll() { ORDER.forEach(paint); updateTag(); }
 
   /* — Cámara — */
-  let focusDir = null, focusDist = 0, shiftX = 0, shiftY = 0, hasOffset = false;
+  let focusDir = null, focusDist = 0, shiftX = 0, shiftY = 0, hasOffset = false, slowFocus = false;
   function fit() {
     const asp = W / H, t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     baseDist = 1.08 * Math.max(5.0 / (2 * t), 5.6 / (2 * t * asp));
@@ -606,14 +902,21 @@ function init3D() {
     camera.aspect = W / H; camera.updateProjectionMatrix();
     fit();
   }
-  controls.addEventListener('start', () => { focusDir = null; touched = true; });
+  controls.addEventListener('start', () => { focusDir = null; touched = true; if (api.onUser) api.onUser(); });
   if (window.ResizeObserver) new ResizeObserver(resize).observe(app);
   window.addEventListener('resize', resize);
   resize();
 
+  /* — Montaje inicial, separar y luz — */
+  let introT = reduce ? 99 : 0, floorDone = false, explode = 0, explodeT = 0;
+  const FAR = 4.5, introStart = {};
+  TOUR_BASE.forEach((id, j) => { introStart[id] = 0.15 + j * 0.075; });
+  const lp = { x: 0, y: 0 };
+
   /* — Puntero — */
   const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
   function pick(ev) {
+    if (introT < 2.6) return null;
     const r = canvas.getBoundingClientRect();
     mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(mouse, camera);
@@ -628,7 +931,7 @@ function init3D() {
   });
   canvas.addEventListener('pointerleave', () => { canvas.classList.remove('pointing'); if (hoveredId) hover(null); });
   let down = null;
-  canvas.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY }; canvas.classList.add('grabbing'); });
+  canvas.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY }; canvas.classList.add('grabbing'); introT = Math.max(introT, 99); });
   window.addEventListener('pointerup', ev => {
     canvas.classList.remove('grabbing');
     if (!down) return;
@@ -642,67 +945,123 @@ function init3D() {
     requestAnimationFrame(loop);
     const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
     const k = reduce ? 1 : Math.min(1, 4.2 * dt);
+    const kf = reduce ? 1 : Math.min(1, (slowFocus ? 1.7 : 4.2) * dt);
+    if (introT < 99) introT += dt;
+
     if (!reduce) {
       piedra.position.y = Math.sin(t * 0.7) * 0.05;
       tickRing.rotation.y = -t * 0.035;
-      for (let i = 0; i < N; i++) {
+      for (let i = 0; i < NP; i++) {
         let y = pPos[i * 3 + 1] + dt * 0.07 * pSeed[i];
         if (y > 5.5) y = -1;
         pPos[i * 3 + 1] = y;
       }
       pGeo.attributes.position.needsUpdate = true;
+      // la luz principal sigue al cursor; de vez en cuando pasa un destello dorado
+      lp.x += (ptr.x - lp.x) * Math.min(1, 2 * dt); lp.y += (ptr.y - lp.y) * Math.min(1, 2 * dt);
+      key.position.set(5 + lp.x * 3.5, 9 + lp.y * 2.5, 6);
+      app.style.setProperty('--px', lp.x.toFixed(3)); app.style.setProperty('--py', lp.y.toFixed(3));
+      const cyc = (t % 16) / 16, win = 0.2;
+      if (cyc < win && introT > 3.4) {
+        const u = cyc / win, ang = u * Math.PI * 1.6 + 0.4;
+        glint.position.set(Math.cos(ang) * 3.1, 1.6, Math.sin(ang) * 3.1);
+        glint.intensity = 1.5 * Math.pow(Math.sin(u * Math.PI), 2);
+      } else glint.intensity = 0;
+    }
+
+    // montaje inicial y separación de piezas
+    explode += (explodeT - explode) * (reduce ? 1 : Math.min(1, 2.2 * dt));
+    ORDER.forEach(id => {
+      const it = items[id];
+      const tgt = id === selectedId ? 0.16 : id === hoveredId ? 0.06 : 0;
+      it.lift += (tgt - it.lift) * k;
+      const e = easeOut((introT - (introStart[id] || 0)) / 1.5);
+      pg[id].position.copy(it.xd).multiplyScalar(it.xdist * explode + it.lift + FAR * (1 - e));
+    });
+    const fin = clamp01((introT - 2.7) / 0.6), solid = fin * (1 - clamp01(explode * 5));
+    corners.forEach(c => c.scale.setScalar(Math.max(0.0001, solid)));
+    pyrLine.material.opacity = 0.75 * solid;
+    if (!floorDone) {
+      const f = easeOut((introT - 0.2) / 2.4);
+      floor.scale.setScalar(0.7 + 0.3 * f);
+      floor.children.forEach(c => { c.material.opacity = c.userData.op * f; });
+      if (f >= 1) floorDone = true;
+    }
+
+    // cámara: llegada lenta y vuelos suaves hacia cada pieza
+    if (introT < 3.6 && !touched && !focusDir) {
+      vA.copy(camera.position).sub(TARGET).normalize();
+      camera.position.copy(TARGET).addScaledVector(vA, baseDist * (1 + 0.4 * (1 - easeOut(introT / 3.4))));
     }
     if (focusDir) {
       const off = camera.position.clone().sub(TARGET), dist = off.length();
-      const dir = off.normalize().lerp(focusDir, k).normalize();
-      camera.position.copy(TARGET).addScaledVector(dir, dist + (focusDist - dist) * k);
-      if (dir.distanceTo(focusDir) < 0.01 && Math.abs(dist - focusDist) < 0.05) focusDir = null;
+      const dir = off.normalize().lerp(focusDir, kf).normalize();
+      camera.position.copy(TARGET).addScaledVector(dir, dist + (focusDist - dist) * kf);
+      if (dir.distanceTo(focusDir) < 0.01 && Math.abs(dist - focusDist) < 0.05) { focusDir = null; slowFocus = false; }
     }
-    // desplaza la piedra hacia el lado libre cuando el panel está abierto
+    // la piedra se centra en el espacio libre que dejan el panel y la barra del recorrido
     let tx = 0, ty = 0;
-    if (selectedId) { if (mobileMQ.matches) ty = sheet.offsetHeight / 2; else tx = sheet.offsetWidth / 2; }
+    const tbH = tour.on ? tourbar.offsetHeight + 20 : 0;
+    if (selectedId && !mobileMQ.matches) tx = sheet.offsetWidth / 2;
+    if (mobileMQ.matches) ty = ((selectedId ? sheet.offsetHeight : 0) - tbH - 26) / 2 + 13;
+    else ty = tbH / 2;
     shiftX += (tx - shiftX) * k; shiftY += (ty - shiftY) * k;
-    if (!tx && !ty && Math.abs(shiftX) + Math.abs(shiftY) < 0.3) {
+    if (Math.abs(tx) + Math.abs(ty) < 0.5 && Math.abs(shiftX) + Math.abs(shiftY) < 0.3) {
       shiftX = shiftY = 0;
       if (hasOffset) { camera.clearViewOffset(); hasOffset = false; }
     } else { camera.setViewOffset(W, H, shiftX, shiftY, W, H); hasOffset = true; }
-    const cp = camera.position;
-    ORDER.forEach(id => {
+
+    ORDER.forEach(id => {                                    // los medallones se desvanecen cuando su arista da la espalda
       const it = items[id]; if (!it.med) return;
-      const f = it.out.dot(cp.clone().sub(it.med.position).normalize());
+      it.med.getWorldPosition(vA);
+      const f = it.out.dot(vB.copy(camera.position).sub(vA).normalize());
       it.med.material.opacity = Math.max(0, Math.min(1, (f + 0.05) / 0.3));
     });
     if (tag.visible) {
       const s = 1.3 * camera.position.distanceTo(TARGET) / baseDist;
-      tag.scale.set(s, s * 0.1875, 1); tag.position.copy(tagAnchor).add(piedra.position);
+      tag.scale.set(s, s * 0.1875, 1);
+      tag.position.set(0, APEX_Y + 0.7 + 1.6 * explode, 0).add(piedra.position);
     }
     controls.update();
     renderer.render(scene, camera);
   })();
 
   // las texturas se generan después del primer cuadro, una piedra por turno
-  ['piramide', 'arista', 'cara'].forEach((g, i) => setTimeout(() => { try { applyStone(g); } catch (err) {} }, 150 + i * 200));
+  ['piramide', 'arista', 'cara'].forEach((g, i) => setTimeout(() => { try { applyStone(g); } catch (err) { /* se queda lisa */ } }, 150 + i * 200));
 
-  return {
+  const api = {
+    onUser: null,
     repaint: paintAll,
-    select: function (id) {
+    select: function (id, slow) {
       paintAll();
-      if (id) { focusDir = items[id].dir.clone(); focusDist = baseDist * 1.15; touched = true; }
+      slowFocus = !!slow;
+      if (id) { focusDir = items[id].dir.clone(); focusDist = baseDist * (explodeT ? 1.55 : 1.15); touched = true; }
       controls.autoRotate = !id && !userPaused;
     },
     refreshSpin: function () { controls.autoRotate = !selectedId && !userPaused; },
-    reset: function () { touched = false; focusDir = HOME_DIR.clone(); focusDist = baseDist; },
+    reset: function (slow) { touched = false; slowFocus = !!slow; focusDir = HOME_DIR.clone(); focusDist = baseDist * (explodeT ? 1.5 : 1); },
+    setExplode: function (on) {
+      explodeT = on ? 1 : 0; slowFocus = true; touched = true;
+      if (selectedId) { focusDir = items[selectedId].dir.clone(); focusDist = baseDist * (on ? 1.55 : 1.15); }
+      else { focusDir = camera.position.clone().sub(TARGET).normalize(); focusDist = baseDist * (on ? 1.5 : 1); }
+    },
+    skipIntro: function () { if (introT < 99) introT = 99; },
     relabel: function () { relabels.forEach(fn => fn()); }
   };
+  api.onUser = function () { if (tour.on && tour.playing) { tour.playing = false; stopSpeech(); paintTour(); } };
+  return api;
 }
 
 try { s3 = init3D(); } catch (err) { s3 = null; }
 if (!s3) {
-  $('nogl').hidden = false; $('tools').hidden = true;
-  cap.textContent = 'Elige un tema del índice';
+  $('nogl').hidden = false;
+  ['explodeBtn', 'spin', 'reset'].forEach(id => { $(id).hidden = true; });
+  cap.textContent = capIdle();
 } else if (document.fonts && document.fonts.load) {
-  Promise.all(['400 40px "Cormorant Garamond"', '600 40px "Cormorant Garamond"', '700 40px "Cormorant Garamond"']
+  Promise.all(['400 40px "Cormorant Garamond"', '500 40px "Cormorant Garamond"', '600 40px "Cormorant Garamond"', '700 40px "Cormorant Garamond"']
     .map(f => document.fonts.load(f))).then(() => s3 && s3.relabel()).catch(() => {});
 }
+if (!canSpeak) $('tbVoice').hidden = true;
 paintSpinBtn();
+(function deepLink() { const h = location.hash.slice(1); if (TOPICS[h]) setTimeout(() => select(h, 'link'), 300); })();
 })();
