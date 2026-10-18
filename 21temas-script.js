@@ -129,6 +129,7 @@ function explodeDir(id) {
 
 const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const mobileMQ = window.matchMedia('(max-width: 760px)');
+const wideMQ = window.matchMedia('(min-width: 1280px)');          // cabe el índice junto al panel de lectura
 const $ = id => document.getElementById(id);
 const app = $('app'), sheet = $('sheet'), sheetBody = $('sheetBody'), cap = $('cap'), rail = $('rail');
 const tourbar = $('tourbar'), indexEl = $('index'), ptr = { x: 0, y: 0 };
@@ -198,15 +199,21 @@ function toggleIndex(force) {
   const open = force === undefined ? !indexEl.classList.contains('open') : force;
   indexEl.classList.toggle('open', open);
   indexEl.setAttribute('aria-hidden', String(!open));
+  document.body.classList.toggle('ix-open', open);
   $('ixBtn').setAttribute('aria-expanded', String(open));
+  if (s3) s3.refit();
 }
 $('ixBtn').addEventListener('click', () => toggleIndex());
 $('ixClose').addEventListener('click', () => toggleIndex(false));
 $('ixList').addEventListener('click', e => {
   const b = e.target.closest('.ix-row'); if (!b) return;
   select(b.dataset.id, 'index');
-  if (mobileMQ.matches) toggleIndex(false);
+  if (!wideMQ.matches) toggleIndex(false);
 });
+document.addEventListener('pointerdown', e => {          // con el índice superpuesto, tocar fuera lo cierra
+  if (wideMQ.matches || !indexEl.classList.contains('open')) return;
+  if (!indexEl.contains(e.target) && !$('ixBtn').contains(e.target)) toggleIndex(false);
+}, true);
 $('ixList').addEventListener('mouseover', e => { const b = e.target.closest('.ix-row'); if (b) hover(b.dataset.id); });
 $('ixList').addEventListener('mouseleave', () => hover(null));
 
@@ -437,6 +444,7 @@ $('tourBtn').addEventListener('click', () => { if (tour.on) tourExit(); else tou
 /* ═══ Teclado y botones ═══ */
 function toggleNote(open) {
   const n = $('note'); n.classList.toggle('open', open); n.setAttribute('aria-hidden', String(!open));
+  Array.prototype.forEach.call(app.children, el => { if (el !== n) el.inert = open; });   // lo de atrás queda inerte
   if (open) $('noteClose').focus(); else $('noteBtn').focus();
 }
 $('noteBtn').addEventListener('click', () => toggleNote(true));
@@ -444,7 +452,15 @@ $('noteClose').addEventListener('click', () => toggleNote(false));
 $('note').addEventListener('click', e => { if (e.target === $('note')) toggleNote(false); });
 document.addEventListener('keydown', e => {
   if (s3) s3.skipIntro();
-  if (e.key === 'Escape' && $('note').classList.contains('open')) { toggleNote(false); return; }
+  if ($('note').classList.contains('open')) {            // con la nota abierta, el teclado solo sirve a la nota
+    if (e.key === 'Escape') toggleNote(false);
+    else if (e.key === 'Tab') {
+      const f = $('note').querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])');
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey ? document.activeElement === first : document.activeElement === last) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+    }
+    return;
+  }
   if (e.key === 'Escape') {
     if (indexEl.classList.contains('open')) { toggleIndex(false); return; }
     if (tour.on) { tourExit(); return; }
@@ -510,8 +526,8 @@ function init3D() {
 
   /* — Una sola piedra: caliza de grano fino, hueso cálido — */
 /*STONEGEN-START*/
-  function genStoneSet(seed, opts) {
-    opts = opts || {};
+  // el ruido base (lo caro) se calcula una vez por semilla; cada variante solo añade cincel o margen
+  function genStone(seed) {
     const S = 512, N = S * S;
     const smooth = t => t * t * (3 - 2 * t);
     const clamp = v => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -537,23 +553,7 @@ function init3D() {
       }
       return s / norm;
     }
-
-    const H = new Float32Array(N), A = new Float32Array(N * 3), R = new Float32Array(N);
-    for (let y = 0; y < S; y++) {
-      for (let x = 0; x < S; x++) {
-        const u = x / S, v = y / S, i = y * S + x;
-        const low = fbm(u, v, 3, 3, 3, 1), mid = fbm(u, v, 9, 9, 3, 2), g = hash(x, y, 99);
-        const bed = fbm(u, v, 2, 9, 3, 8), mott = fbm(u, v, 6, 6, 4, 9), pit = fbm(u, v, 46, 46, 2, 4), ox = fbm(u, v, 4, 4, 3, 10);
-        const h = 0.5 * mid + 0.2 * bed + 0.14 * low + 0.09 * mott + 0.07 * g - (pit > 0.82 ? (pit - 0.82) * 1.8 : 0);
-        const m = 0.9 + (bed - 0.5) * 0.12 + (mott - 0.5) * 0.14 + (g - 0.5) * 0.07;
-        let r = m + 0.004, gg = m, b = m - 0.012;
-        if (ox > 0.64) { const k = Math.min(1, (ox - 0.64) * 3.5); r -= 0.02 * k; gg -= 0.05 * k; b -= 0.1 * k; }   // velos de óxido
-        if (pit > 0.82) { const k = 1 - (pit - 0.82) * 0.9; r *= k; gg *= k; b *= k; }
-        H[i] = h; A[i * 3] = r; A[i * 3 + 1] = gg; A[i * 3 + 2] = b; R[i] = 0.88 + (g - 0.5) * 0.08;
-      }
-    }
-
-    function stroke(x0, y0, x1, y1, w, depth, dark) {
+    function stroke(H, A, x0, y0, x1, y1, w, depth, dark) {
       const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 1.5));
       for (let s = 0; s <= n; s++) {
         const t = s / n, cx = Math.round(x0 + (x1 - x0) * t), cy = Math.round(y0 + (y1 - y0) * t);
@@ -566,59 +566,89 @@ function init3D() {
         }
       }
     }
-    for (let c = 0; c < 2; c++) {                  // dos fisuras apenas visibles
-      let x = rnd() * S, y = rnd() * S, a = rnd() * 6.283;
-      const segs = 14 + ((rnd() * 10) | 0);
-      for (let s = 0; s < segs; s++) {
-        a += (rnd() - 0.5) * 0.9;
-        const nx = x + Math.cos(a) * (6 + rnd() * 8), ny = y + Math.sin(a) * (6 + rnd() * 8);
-        stroke(x, y, nx, ny, 1, 0.1, 0.22); x = nx; y = ny;
-      }
-    }
-    if (opts.tool) {                               // huellas de cincel
-      for (let c = 0; c < 110; c++) {
-        const x = rnd() * S, y = rnd() * S, L = 36 + rnd() * 70, a2 = 0.62 + (rnd() - 0.5) * 0.12;
-        stroke(x, y, x + Math.cos(a2) * L, y + Math.sin(a2) * L, 1, 0.05, 0.06);
-      }
-    }
-    if (opts.margin) {                             // sillar: margen labrado con ranura fina
-      const m = 30;
-      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-        const d = Math.min(x, y, S - 1 - x, S - 1 - y);
-        if (d > m + 10) { const i0 = y * S + x; A[i0 * 3] *= 1.07; A[i0 * 3 + 1] *= 1.07; A[i0 * 3 + 2] *= 1.07; continue; }
-        const i = y * S + x, t = Math.min(1, d / m), blend = 0.65 * (1 - t);
-        H[i] = H[i] * (1 - blend) + 0.45 * blend;
-        const gr = Math.exp(-Math.pow((d - m) / 2.4, 2));
-        H[i] -= 0.45 * gr + 0.25 * (1 - smooth(Math.min(1, d / 8)));
-        const f = (1 - 0.26 * gr) * (0.8 + 0.2 * smooth(Math.min(1, d / 14)));
-        A[i * 3] *= f; A[i * 3 + 1] *= f; A[i * 3 + 2] *= f;
-      }
-    }
-
-    const str = 8;
     function mk(fill) {
       const c = document.createElement('canvas'); c.width = c.height = S;
       const ctx = c.getContext('2d'), id = ctx.createImageData(S, S);
       fill(id.data); ctx.putImageData(id, 0, 0); return c;
     }
-    const albedo = mk(d => {
-      for (let i = 0; i < N; i++) {
-        d[i * 4] = clamp(A[i * 3]) * 255; d[i * 4 + 1] = clamp(A[i * 3 + 1]) * 255; d[i * 4 + 2] = clamp(A[i * 3 + 2]) * 255; d[i * 4 + 3] = 255;
+
+    let base = null, rough = null;
+    function makeBase() {
+      const H = new Float32Array(N), A = new Float32Array(N * 3), R = new Float32Array(N);
+      for (let y = 0; y < S; y++) {
+        for (let x = 0; x < S; x++) {
+          const u = x / S, v = y / S, i = y * S + x;
+          const low = fbm(u, v, 3, 3, 3, 1), mid = fbm(u, v, 9, 9, 3, 2), g = hash(x, y, 99);
+          const bed = fbm(u, v, 2, 9, 3, 8), mott = fbm(u, v, 6, 6, 4, 9), pit = fbm(u, v, 46, 46, 2, 4), ox = fbm(u, v, 4, 4, 3, 10);
+          const h = 0.5 * mid + 0.2 * bed + 0.14 * low + 0.09 * mott + 0.07 * g - (pit > 0.82 ? (pit - 0.82) * 1.8 : 0);
+          const m = 0.9 + (bed - 0.5) * 0.12 + (mott - 0.5) * 0.14 + (g - 0.5) * 0.07;
+          let r = m + 0.004, gg = m, b = m - 0.012;
+          if (ox > 0.64) { const k = Math.min(1, (ox - 0.64) * 3.5); r -= 0.02 * k; gg -= 0.05 * k; b -= 0.1 * k; }   // velos de óxido
+          if (pit > 0.82) { const k = 1 - (pit - 0.82) * 0.9; r *= k; gg *= k; b *= k; }
+          H[i] = h; A[i * 3] = r; A[i * 3 + 1] = gg; A[i * 3 + 2] = b; R[i] = 0.88 + (g - 0.5) * 0.08;
+        }
       }
-    });
-    const normal = mk(d => {
-      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-        const xm = (x + S - 1) % S, xp = (x + 1) % S, ym = (y + S - 1) % S, yp = (y + 1) % S;
-        let nx = (H[y * S + xm] - H[y * S + xp]) * str, ny = (H[yp * S + x] - H[ym * S + x]) * str, nz = 1;
-        const l = Math.sqrt(nx * nx + ny * ny + nz * nz); nx /= l; ny /= l; nz /= l;
-        const i = (y * S + x) * 4;
-        d[i] = (nx * 0.5 + 0.5) * 255; d[i + 1] = (ny * 0.5 + 0.5) * 255; d[i + 2] = (nz * 0.5 + 0.5) * 255; d[i + 3] = 255;
+      for (let c = 0; c < 2; c++) {                  // dos fisuras apenas visibles
+        let x = rnd() * S, y = rnd() * S, a = rnd() * 6.283;
+        const segs = 14 + ((rnd() * 10) | 0);
+        for (let s = 0; s < segs; s++) {
+          a += (rnd() - 0.5) * 0.9;
+          const nx = x + Math.cos(a) * (6 + rnd() * 8), ny = y + Math.sin(a) * (6 + rnd() * 8);
+          stroke(H, A, x, y, nx, ny, 1, 0.1, 0.22); x = nx; y = ny;
+        }
       }
-    });
-    const rough = mk(d => {
-      for (let i = 0; i < N; i++) { const v = clamp(R[i]) * 255; d[i * 4] = v; d[i * 4 + 1] = v; d[i * 4 + 2] = v; d[i * 4 + 3] = 255; }
-    });
-    return { albedo: albedo, normal: normal, rough: rough };
+      return { H: H, A: A, R: R, rs: rs };
+    }
+
+    function variant(opts) {
+      opts = opts || {};
+      if (!base) base = makeBase();
+      const H = base.H.slice(), A = base.A.slice();
+      rs = base.rs;                                  // cada variante retoma la secuencia tras las fisuras
+      if (opts.tool) {                               // huellas de cincel
+        for (let c = 0; c < 110; c++) {
+          const x = rnd() * S, y = rnd() * S, L = 36 + rnd() * 70, a2 = 0.62 + (rnd() - 0.5) * 0.12;
+          stroke(H, A, x, y, x + Math.cos(a2) * L, y + Math.sin(a2) * L, 1, 0.05, 0.06);
+        }
+      }
+      if (opts.margin) {                             // sillar: margen labrado con ranura fina
+        const m = 30;
+        for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+          const d = Math.min(x, y, S - 1 - x, S - 1 - y);
+          if (d > m + 10) { const i0 = y * S + x; A[i0 * 3] *= 1.07; A[i0 * 3 + 1] *= 1.07; A[i0 * 3 + 2] *= 1.07; continue; }
+          const i = y * S + x, t = Math.min(1, d / m), blend = 0.65 * (1 - t);
+          H[i] = H[i] * (1 - blend) + 0.45 * blend;
+          const gr = Math.exp(-Math.pow((d - m) / 2.4, 2));
+          H[i] -= 0.45 * gr + 0.25 * (1 - smooth(Math.min(1, d / 8)));
+          const f = (1 - 0.26 * gr) * (0.8 + 0.2 * smooth(Math.min(1, d / 14)));
+          A[i * 3] *= f; A[i * 3 + 1] *= f; A[i * 3 + 2] *= f;
+        }
+      }
+
+      const str = 8;
+      const albedo = mk(d => {
+        for (let i = 0; i < N; i++) {
+          d[i * 4] = clamp(A[i * 3]) * 255; d[i * 4 + 1] = clamp(A[i * 3 + 1]) * 255; d[i * 4 + 2] = clamp(A[i * 3 + 2]) * 255; d[i * 4 + 3] = 255;
+        }
+      });
+      const normal = mk(d => {
+        for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+          const xm = (x + S - 1) % S, xp = (x + 1) % S, ym = (y + S - 1) % S, yp = (y + 1) % S;
+          let nx = (H[y * S + xm] - H[y * S + xp]) * str, ny = (H[yp * S + x] - H[ym * S + x]) * str, nz = 1;
+          const l = Math.sqrt(nx * nx + ny * ny + nz * nz); nx /= l; ny /= l; nz /= l;
+          const i = (y * S + x) * 4;
+          d[i] = (nx * 0.5 + 0.5) * 255; d[i + 1] = (ny * 0.5 + 0.5) * 255; d[i + 2] = (nz * 0.5 + 0.5) * 255; d[i + 3] = 255;
+        }
+      });
+      if (!rough) {                                  // la rugosidad no cambia entre variantes: un solo lienzo
+        const R = base.R;
+        rough = mk(d => {
+          for (let i = 0; i < N; i++) { const v = clamp(R[i]) * 255; d[i * 4] = v; d[i * 4 + 1] = v; d[i * 4 + 2] = v; d[i * 4 + 3] = 255; }
+        });
+      }
+      return { albedo: albedo, normal: normal, rough: rough };
+    }
+    return { variant: variant };
   }
   /*STONEGEN-END*/
 
@@ -628,14 +658,15 @@ function init3D() {
     cara:     { seed: 1201, repeat: [1, 1],      opts: { margin: true, tool: true } }
   };
   const STONE_COLOR = 0xC6C5C0;
-  const matsByGroup = { piramide: [], arista: [], cara: [] };
+  const matsByGroup = { piramide: [], arista: [], cara: [] }, stoneGens = {};
   function makeMat(grp) {
     const m = new THREE.MeshStandardMaterial({ color: STONE_COLOR, roughness: 1, metalness: 0, side: THREE.DoubleSide, emissive: 0x000000 });
     matsByGroup[grp].push(m);
     return m;
   }
   function applyStone(grp) {
-    const cfg = STONE[grp], set = genStoneSet(cfg.seed, cfg.opts);
+    const cfg = STONE[grp];
+    const gen = stoneGens[cfg.seed] || (stoneGens[cfg.seed] = genStone(cfg.seed)), set = gen.variant(cfg.opts);
     const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1);
     const tex = cv => {
       const t = new THREE.CanvasTexture(cv);
@@ -749,7 +780,8 @@ function init3D() {
     const a = V3(...pair[0]), b = V3(...pair[1]), id = pair[2], g = pieceGroup(id);
     const mid = a.clone().add(b).multiplyScalar(0.5), dirE = b.clone().sub(a).normalize();
     const len = a.distanceTo(b);
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.15, len + 0.1, 0.15), makeMat('arista'));
+    // termina en el vértice: la esfera de la esquina envuelve el extremo (diagonal ≈ 0.106 < radio)
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.15, len, 0.15), makeMat('arista'));
     mesh.position.copy(mid);
     mesh.quaternion.setFromUnitVectors(V3(0, 1, 0), dirE);
     mesh.rotateY(Math.PI / 4);                                   // la faceta plana mira hacia fuera
@@ -783,7 +815,7 @@ function init3D() {
   });
   const corners = [];
   [-1, 1].forEach(x => [-1, 1].forEach(y => [-1, 1].forEach(z => {
-    const s = new THREE.Mesh(new THREE.SphereGeometry(0.1, 14, 14), goldMat);
+    const s = new THREE.Mesh(new THREE.SphereGeometry(0.115, 24, 18), goldMat);
     s.position.set(x, y, z); piedra.add(s); corners.push(s);
   })));
 
@@ -813,7 +845,8 @@ function init3D() {
   }
   relabels.push(() => { if (tagId) drawTag(tagId); });
   function updateTag() {
-    const id = hoveredId || selectedId;
+    // en escritorio el panel ya muestra el título elegido: el rótulo solo acompaña al puntero
+    const id = hoveredId || (mobileMQ.matches ? selectedId : null);
     if (!id || !items[id]) { tag.visible = false; tagId = null; return; }
     if (id !== tagId) { tagId = id; drawTag(id); }
     tag.visible = true;
@@ -890,9 +923,21 @@ function init3D() {
 
   /* — Cámara — */
   let focusDir = null, focusDist = 0, shiftX = 0, shiftY = 0, hasOffset = false, slowFocus = false;
+  // medidas de las capas que tapan la escena; se leen al cambiar de tamaño, no en cada cuadro
+  const topEl = $('top'), dockEl = $('dock'), sz = { top: 0, dock: 0, sheetW: 0, sheetH: 0, tb: 0, ix: 0 };
+  function measure() {
+    sz.top = topEl.offsetHeight; sz.dock = dockEl.offsetHeight;
+    sz.sheetW = sheet.offsetWidth; sz.sheetH = sheet.offsetHeight;
+    sz.tb = tourbar.offsetHeight; sz.ix = indexEl.offsetWidth;
+  }
   function fit() {
     const asp = W / H, t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    baseDist = 1.08 * Math.max(5.0 / (2 * t), 5.6 / (2 * t * asp));
+    // en escritorio la piedra cabe en el hueco que dejan encabezado, base, panel de lectura e índice
+    const desk = !mobileMQ.matches;
+    const freeH = desk ? Math.max(H * 0.55, H - sz.top - sz.dock) : H;
+    const freeW = desk ? Math.max(W * 0.4, W - (selectedId ? sz.sheetW : 0) -
+      (wideMQ.matches && indexEl.classList.contains('open') ? sz.ix : 0)) : W;
+    baseDist = 1.08 * Math.max(5.0 * H / freeH / (2 * t), 5.6 * W / freeW / (2 * t * asp));
     controls.minDistance = baseDist * 0.45; controls.maxDistance = baseDist * 1.9;
     if (!touched) camera.position.copy(TARGET).addScaledVector(HOME_DIR, baseDist);
   }
@@ -900,11 +945,18 @@ function init3D() {
     W = Math.max(1, app.clientWidth); H = Math.max(1, app.clientHeight);
     renderer.setSize(W, H, false);
     camera.aspect = W / H; camera.updateProjectionMatrix();
-    fit();
+    measure(); fit(); wake();
   }
-  controls.addEventListener('start', () => { focusDir = null; touched = true; if (api.onUser) api.onUser(); });
-  if (window.ResizeObserver) new ResizeObserver(resize).observe(app);
-  window.addEventListener('resize', resize);
+  // en reposo la escena baja a 30 cuadros (o se detiene con movimiento reducido); cualquier interacción la despierta
+  let interacting = false, wakeUntil = 0, idleAcc = 0, hadSel = false;
+  function wake(ms) { wakeUntil = Math.max(wakeUntil, performance.now() + (ms || 600)); }
+  controls.addEventListener('start', () => { focusDir = null; touched = true; interacting = true; if (api.onUser) api.onUser(); });
+  controls.addEventListener('end', () => { interacting = false; wake(1500); });   // la inercia sigue un momento
+  if (window.ResizeObserver) {
+    new ResizeObserver(resize).observe(app);
+    const ro = new ResizeObserver(() => { measure(); fit(); });
+    [topEl, dockEl, sheet, tourbar, indexEl].forEach(el => ro.observe(el));
+  } else window.addEventListener('resize', resize);
   resize();
 
   /* — Montaje inicial, separar y luz — */
@@ -940,10 +992,13 @@ function init3D() {
   });
 
   /* — Bucle — */
-  const clock = new THREE.Clock();
+  const clock = new THREE.Clock(), noteEl = $('note'), halo = app.querySelector('.halo');
+  let haloX = '', haloY = '';
   (function loop() {
     requestAnimationFrame(loop);
     const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+    // tapada por la nota o por el índice a pantalla completa: no hay nada que dibujar
+    if (noteEl.classList.contains('open') || (mobileMQ.matches && indexEl.classList.contains('open'))) return;
     const k = reduce ? 1 : Math.min(1, 4.2 * dt);
     const kf = reduce ? 1 : Math.min(1, (slowFocus ? 1.7 : 4.2) * dt);
     if (introT < 99) introT += dt;
@@ -960,7 +1015,10 @@ function init3D() {
       // la luz principal sigue al cursor; de vez en cuando pasa un destello dorado
       lp.x += (ptr.x - lp.x) * Math.min(1, 2 * dt); lp.y += (ptr.y - lp.y) * Math.min(1, 2 * dt);
       key.position.set(5 + lp.x * 3.5, 9 + lp.y * 2.5, 6);
-      app.style.setProperty('--px', lp.x.toFixed(3)); app.style.setProperty('--py', lp.y.toFixed(3));
+      // solo el halo usa el paralaje: escribirlo en .app recalculaba el estilo de toda la página en cada cuadro
+      const hx = lp.x.toFixed(3), hy = lp.y.toFixed(3);
+      if (hx !== haloX) { halo.style.setProperty('--px', hx); haloX = hx; }
+      if (hy !== haloY) { halo.style.setProperty('--py', hy); haloY = hy; }
       const cyc = (t % 16) / 16, win = 0.2;
       if (cyc < win && introT > 3.4) {
         const u = cyc / win, ang = u * Math.PI * 1.6 + 0.4;
@@ -971,9 +1029,11 @@ function init3D() {
 
     // montaje inicial y separación de piezas
     explode += (explodeT - explode) * (reduce ? 1 : Math.min(1, 2.2 * dt));
+    let moving = introT < 4 || !floorDone || Math.abs(explodeT - explode) > 1e-3;
     ORDER.forEach(id => {
       const it = items[id];
       const tgt = id === selectedId ? 0.16 : id === hoveredId ? 0.06 : 0;
+      if (Math.abs(tgt - it.lift) > 1e-3) moving = true;
       it.lift += (tgt - it.lift) * k;
       const e = easeOut((introT - (introStart[id] || 0)) / 1.5);
       pg[id].position.copy(it.xd).multiplyScalar(it.xdist * explode + it.lift + FAR * (1 - e));
@@ -999,12 +1059,16 @@ function init3D() {
       camera.position.copy(TARGET).addScaledVector(dir, dist + (focusDist - dist) * kf);
       if (dir.distanceTo(focusDir) < 0.01 && Math.abs(dist - focusDist) < 0.05) { focusDir = null; slowFocus = false; }
     }
-    // la piedra se centra en el espacio libre que dejan el panel y la barra del recorrido
+    // la piedra se centra en el espacio libre que dejan encabezado, base, índice, panel y recorrido
     let tx = 0, ty = 0;
-    const tbH = tour.on ? tourbar.offsetHeight + 20 : 0;
-    if (selectedId && !mobileMQ.matches) tx = sheet.offsetWidth / 2;
-    if (mobileMQ.matches) ty = ((selectedId ? sheet.offsetHeight : 0) - tbH - 26) / 2 + 13;
-    else ty = tbH / 2;
+    const tbH = tour.on ? sz.tb + 20 : 0;
+    if (mobileMQ.matches) ty = ((selectedId ? sz.sheetH : 0) - tbH) / 2;
+    else {
+      if (selectedId) tx += sz.sheetW / 2;
+      if (wideMQ.matches && indexEl.classList.contains('open')) tx -= sz.ix / 2;
+      ty = ((tour.on ? tbH : sz.dock) - sz.top) / 2;
+    }
+    if (Math.abs(tx - shiftX) + Math.abs(ty - shiftY) > 0.5) moving = true;
     shiftX += (tx - shiftX) * k; shiftY += (ty - shiftY) * k;
     if (Math.abs(tx) + Math.abs(ty) < 0.5 && Math.abs(shiftX) + Math.abs(shiftY) < 0.3) {
       shiftX = shiftY = 0;
@@ -1023,22 +1087,32 @@ function init3D() {
       tag.position.set(0, APEX_Y + 0.7 + 1.6 * explode, 0).add(piedra.position);
     }
     controls.update();
+    if (!(moving || focusDir || interacting || performance.now() < wakeUntil)) {
+      if (reduce && !controls.autoRotate) return;          // quieta: el último cuadro sigue siendo válido
+      idleAcc += dt; if (idleAcc < 0.03) return;           // solo el vaivén ambiental: ~30 cuadros bastan
+      idleAcc = 0;
+    }
     renderer.render(scene, camera);
   })();
 
   // las texturas se generan después del primer cuadro, una piedra por turno
-  ['piramide', 'arista', 'cara'].forEach((g, i) => setTimeout(() => { try { applyStone(g); } catch (err) { /* se queda lisa */ } }, 150 + i * 200));
+  ['piramide', 'arista', 'cara'].forEach((g, i) => setTimeout(() => { try { applyStone(g); } catch (err) { /* se queda lisa */ } wake(); }, 150 + i * 200));
 
   const api = {
     onUser: null,
-    repaint: paintAll,
+    repaint: function () { paintAll(); wake(); },
+    refit: fit,
     select: function (id, slow) {
-      paintAll();
+      fit(); paintAll();
       slowFocus = !!slow;
       if (id) { focusDir = items[id].dir.clone(); focusDist = baseDist * (explodeT ? 1.55 : 1.15); touched = true; }
+      else if (hadSel) {                                   // al cerrar, el panel deja más espacio: la cámara se acerca sin girar
+        focusDir = camera.position.clone().sub(TARGET).normalize(); focusDist = baseDist * (explodeT ? 1.5 : 1);
+      }
+      hadSel = !!id;
       controls.autoRotate = !id && !userPaused;
     },
-    refreshSpin: function () { controls.autoRotate = !selectedId && !userPaused; },
+    refreshSpin: function () { controls.autoRotate = !selectedId && !userPaused; wake(); },
     reset: function (slow) { touched = false; slowFocus = !!slow; focusDir = HOME_DIR.clone(); focusDist = baseDist * (explodeT ? 1.5 : 1); },
     setExplode: function (on) {
       explodeT = on ? 1 : 0; slowFocus = true; touched = true;
@@ -1046,7 +1120,7 @@ function init3D() {
       else { focusDir = camera.position.clone().sub(TARGET).normalize(); focusDist = baseDist * (on ? 1.5 : 1); }
     },
     skipIntro: function () { if (introT < 99) introT = 99; },
-    relabel: function () { relabels.forEach(fn => fn()); }
+    relabel: function () { relabels.forEach(fn => fn()); wake(); }
   };
   api.onUser = function () { if (tour.on && tour.playing) { tour.playing = false; stopSpeech(); paintTour(); } };
   return api;
