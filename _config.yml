@@ -1,0 +1,5 @@
+# GitHub Pages: solo se publica la página. Los textos fuente quedan en el repositorio pero no en el sitio,
+# porque un .md servido tal cual no puede llevar la etiqueta noindex.
+exclude:
+  - README.md
+  - sintesis_companero.md
